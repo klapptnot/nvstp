@@ -1,0 +1,38 @@
+return {
+  "simrat39/symbols-outline.nvim",
+  event = { "BufEnter", "BufNewFile" },
+  lazy = true,
+  config = function()
+    require("symbols-outline").setup({
+      highlight_hovered_item = true,
+      show_guides = true,
+      auto_preview = false,
+      position = "right",
+      relative_width = true,
+      width = 25,
+      auto_close = false,
+      show_numbers = true,
+      show_relative_numbers = true,
+      show_symbol_details = true,
+      preview_bg_highlight = "Pmenu",
+      autofold_depth = nil,
+      auto_unfold_hover = true,
+      fold_markers = { "", "" },
+      wrap = true,
+      keymaps = {
+        close = { "<Esc>", "q" },
+        goto_location = "<Cr>",
+        focus_location = "o",
+        hover_symbol = "<C-space>",
+        toggle_preview = "p",
+        rename_symbol = "r",
+        code_actions = "a",
+        fold = "f",
+        unfold = "u",
+        fold_all = "F",
+        unfold_all = "U",
+        fold_reset = "R",
+      },
+    })
+  end,
+}
