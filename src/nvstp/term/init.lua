@@ -9,8 +9,8 @@ main.opts = {
   layout = {
     floating = {
       s = "rounded", -- Border style
-      h = 0.7, -- Height of floating window N/100
-      w = 0.7, -- Width of floating window N/100
+      h = 0.75, -- Height of floating window N/100
+      w = 0.75, -- Width of floating window N/100
     },
     horizontal = {
       p = "rightbelow", -- Position of horizontal window

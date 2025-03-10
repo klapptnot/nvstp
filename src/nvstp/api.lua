@@ -173,7 +173,12 @@ function main.paste()
     vim.log.levels.INFO,
     { title = "Nvstp API" }
   )
-  vim.api.nvim_paste(tostring(vim.fn.getreg('"'):sub(1, -2)), false, -1)
+  local reg_str = tostring(vim.fn.getreg('"'))
+  if reg_str:sub(-1) == "\n" then
+    vim.api.nvim_paste(reg_str:sub(1, -2), false, -1)
+  else
+    vim.api.nvim_paste(reg_str,false, -1)
+  end
 end
 
 function main.save()

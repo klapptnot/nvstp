@@ -202,6 +202,14 @@ return {
 
   {
     mapp = "<C-`>",
+    mode = { "n", "v", "t" },
+    exec = api.toggle_fterm,
+    desc = "Toggle floating terminal",
+    opts = __def_opts_lua__,
+  },
+
+  {
+    mapp = "<M-1>",
     mode = { "n", "v", "t" }, -- Allow hiding term when in terminal mode
     exec = api.toggle_hterm,
     desc = "Toggle horizontal terminal",
@@ -209,20 +217,13 @@ return {
   },
 
   {
-    mapp = "<M-1>",
+    mapp = "<M-2>",
     mode = { "n", "v", "t" },
     exec = api.toggle_vterm,
     desc = "Toggle vertical terminal",
     opts = __def_opts_lua__,
   },
 
-  {
-    mapp = "<M-2>",
-    mode = { "n", "v", "t" },
-    exec = api.toggle_fterm,
-    desc = "Toggle floating terminal",
-    opts = __def_opts_lua__,
-  },
 
   {
     mapp = "<",
