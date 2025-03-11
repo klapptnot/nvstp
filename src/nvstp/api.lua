@@ -97,7 +97,7 @@ function main.jump_buf_by_ref(ref)
     })
   else
     vim.api.nvim_notify(
-      str.format("Buffer nor found for {}:{}:{}", file, row, col),
+      str.format("Buffer not found for {}:{}:{}", file, row, col),
       vim.log.levels.INFO,
       { title = "Nvstp API" }
     )

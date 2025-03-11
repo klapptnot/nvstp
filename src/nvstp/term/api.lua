@@ -149,7 +149,7 @@ function main.toggle(layout, focus, inst)
   local vb, vw = nil, nil
   vb = vim.api.nvim_buf_is_valid(fint.buf)
   vw = vim.api.nvim_win_is_valid(fint.win)
-  if not fints[fint_k].vis then
+  if not fints[fint_k].vis or vb and not vw then
     main.show(fint_k) -- Show instance
   elseif focus and vim.api.nvim_get_current_win() ~= fints[fint_k].win and vw then
     vim.api.nvim_set_current_win(fints[fint_k].win)
