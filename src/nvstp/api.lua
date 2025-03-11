@@ -71,37 +71,68 @@ function main.jump_buf_by_ref(ref)
     names[i] = vim.api.nvim_buf_get_name(v)
     if str.ends_with(names[i], file) then found = i end
   end
+  -- treat reference as path
   if found == nil then
-    file = vim.fs.normalize(vim.fs.joinpath(cwd, file))
-    if vim.uv.fs_stat(file) then
-      local buf = vim.fn.bufadd(file)-- New buffer
+    local path = vim.fs.normalize(vim.fs.joinpath(cwd, file))
+    ---@diagnostic disable-next-line: undefined-field
+    if vim.uv.fs_stat(path) then
+      local buf = vim.fn.bufadd(path)
 
       if buf ~= 0 then
         found = buf
         vim.api.nvim_set_option_value("buflisted", false, { buf = buf })
       end
+    else
+      path = vim.fs.normalize(file)
+      ---@diagnostic disable-next-line: undefined-field
+      if vim.uv.fs_stat(path) then
+        local buf = vim.fn.bufadd(path)
+
+        if buf ~= 0 then
+          found = buf
+          vim.api.nvim_set_option_value("buflisted", false, { buf = buf })
+        end
+      end
     end
   end
-  if found ~= nil then
-    local win = vim.api.nvim_get_current_win()
-    local buf = vim.api.nvim_get_current_buf()
-    if vim.api.nvim_get_option_value("filetype", { buf = buf }) == "terminal" then
-      vim.api.nvim_win_close(win, true)
-      win = vim.api.nvim_get_current_win()
-    end
-    vim.api.nvim_set_option_value("buflisted", false, { buf = found })
-    vim.api.nvim_win_set_buf(win, found)
-    vim.api.nvim_win_set_cursor(win, {
-      row,
-      col,
-    })
-  else
+
+  if found == nil then
     vim.api.nvim_notify(
       str.format("Buffer not found for {}:{}:{}", file, row, col),
       vim.log.levels.INFO,
       { title = "Nvstp API" }
     )
+    return false
   end
+
+  -- Found
+  local win = vim.api.nvim_get_current_win()
+  local buf = vim.api.nvim_get_current_buf()
+
+  if vim.api.nvim_get_option_value("filetype", { buf = buf }) == "terminal" then
+    vim.api.nvim_win_close(win, true)
+    win = vim.api.nvim_get_current_win()
+  end
+
+  if #vim.api.nvim_list_wins() > 1 then
+    local wish_win = require("src.nvstp.winker.init").select()
+    if wish_win == nil then
+      vim.api.nvim_notify(
+        "Invalid selection, try again",
+        vim.log.levels.ERROR,
+        { title = "Nvstp API" }
+      )
+      return false
+    end
+    win = wish_win.data.winid
+  end
+
+  vim.api.nvim_set_option_value("buflisted", false, { buf = found })
+  vim.api.nvim_win_set_buf(win, found)
+  vim.api.nvim_win_set_cursor(win, {
+    row,
+    col,
+  })
 
   return true
 end
