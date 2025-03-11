@@ -188,15 +188,15 @@ local blocks = {
     end
   end]],
 
-  file_type = [[  if not_terminal then bar[#bar + 1] = "%#Vibib_file_type# " .. bfft .. " " end]],
+  file_type = [[  if not_terminal then bar[#bar + 1] = "%#Vibib_file_typeF# " .. bfft .. " " end]],
 
   file_eol = [[
   if not_terminal then do
     local eol = vim.bo[sbuf].fileformat
     if eol == "unix" then
-      bar[#bar + 1] = "%#Vibib_file_eol# LF "
+      bar[#bar + 1] = "%#Vibib_file_eolF# LF "
     else
-      bar[#bar + 1] = "%#Vibib_file_eol# CRLF "
+      bar[#bar + 1] = "%#Vibib_file_eolF# CRLF "
     end
   end end]],
 
@@ -204,11 +204,11 @@ local blocks = {
   do
     local enc = vim.bo[sbuf].fileencoding
     if enc ~= "" then
-      bar[#bar + 1] = "%#Vibib_file_encoding# " .. enc .. " "
+      bar[#bar + 1] = "%#Vibib_file_encodingF# " .. enc .. " "
     end
   end]],
 
-  cursor_pos = [[  bar[#bar + 1] = "%#Vibib_cursor_pos# (%p%%) %c:%l/%L => [%b][0x%B] "]],
+  cursor_pos = [[  bar[#bar + 1] = "%#Vibib_cursor_posF# (%p%%) %c:%l/%L => [%b][0x%B] "]],
 
   git_info = [[
   if not_terminal then do
@@ -224,7 +224,7 @@ local blocks = {
       if gst[2] and gst[2] > 0 then mod[2] = "%#Vibib_git_info_changedF#  " .. gst[2] end
       if gst[3] and gst[3] > 0 then mod[3] = "%#Vibib_git_info_removedF#  " .. gst[3] end
       bar[#bar + 1] = string.format(
-        "%s %%#Vibib_git_info_branch#  %s ",
+        "%s %%#Vibib_git_info_branchF#  %s ",
         table.concat(mod, ""),
         vim.b[sbuf].gitsigns_status_dict.head
       )
