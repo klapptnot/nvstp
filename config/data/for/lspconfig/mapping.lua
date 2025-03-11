@@ -10,14 +10,6 @@ return {
   -- },
   {
     meth = "textDocument/codeAction",
-    mapp = "<leader>la",
-    mode = { "n" },
-    exec = vim.lsp.buf.code_action,
-    desc = "Get code actions using LSP provider",
-    opts = __opts__,
-  },
-  {
-    meth = "textDocument/codeAction",
     mapp = "<C-.>",
     mode = { "n", "i", "v" },
     exec = vim.lsp.buf.code_action,
@@ -34,7 +26,7 @@ return {
   },
   {
     meth = "textDocument/definition",
-    mapp = "<leader>lg",
+    mapp = "F",
     mode = { "n" },
     exec = vim.lsp.buf.definition,
     desc = "Jump to definition using LSP provider",

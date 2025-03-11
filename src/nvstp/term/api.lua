@@ -86,7 +86,7 @@ function main.hide(keyname)
   local vb, vw = nil, nil
   vb = vim.api.nvim_buf_is_valid(main.instances[keyname].buf)
   vw = vim.api.nvim_win_is_valid(main.instances[keyname].win)
-  if not (vb or vw) then
+  if not (vb and vw) then
     local layout = main.instances[keyname].lay -- Save layout
     main.instances[keyname] = nil -- empty keyname to use it again
     main.new(layout)

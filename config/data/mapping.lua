@@ -169,6 +169,14 @@ return {
   },
 
   {
+    mapp = "F",
+    mode = { "v" },
+    exec = api.open_visual_selection_ref,
+    desc = "Open file ref from visual selection",
+    opts = __def_opts_lua__,
+  },
+
+  {
     mapp = "<C-v>",
     mode = { "n", "v", "i" },
     exec = api.paste,

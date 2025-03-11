@@ -15,8 +15,11 @@ end
 function main.is_buf_modifiable()
   return vim.api.nvim_get_option_value("modifiable", { buf = 0 })
 end
+
 function main.is_buf_modified() return vim.api.nvim_get_option_value("modified", { buf = 0 }) end
+
 function main.is_buf_named() return vim.api.nvim_buf_get_name(0) ~= "" end
+
 function main.is_buf_empty()
   local lns = vim.api.nvim_buf_get_lines(0, 0, -1, false)
   return lns[1] == "" and #lns == 1
@@ -51,6 +54,76 @@ function main.is_buf_modifiable_notify()
     return false
   end
   return true
+end
+
+--- Jump to a buffer using a string reference, like `main.c:32`
+---@param ref string
+---@return boolean
+function main.jump_buf_by_ref(ref)
+  local bufs = vim.api.nvim_list_bufs()
+  local names = {}
+  local file, row, col = table.unpack(str.split(ref, ":"))
+  local cwd = vim.fn.getcwd()
+  row = tonumber(row or 1)
+  col = tonumber(col or 1)
+  local found = nil
+  for i, v in ipairs(bufs) do
+    names[i] = vim.api.nvim_buf_get_name(v)
+    if str.ends_with(names[i], file) then found = i end
+  end
+  if found == nil then
+    file = vim.fs.normalize(vim.fs.joinpath(cwd, file))
+    if vim.uv.fs_stat(file) then
+      local buf = vim.fn.bufadd(file)-- New buffer
+
+      if buf ~= 0 then
+        found = buf
+        vim.api.nvim_set_option_value("buflisted", false, { buf = buf })
+      end
+    end
+  end
+  if found ~= nil then
+    local win = vim.api.nvim_get_current_win()
+    local buf = vim.api.nvim_get_current_buf()
+    if vim.api.nvim_get_option_value("filetype", { buf = buf }) == "terminal" then
+      vim.api.nvim_win_close(win, true)
+      win = vim.api.nvim_get_current_win()
+    end
+    vim.api.nvim_set_option_value("buflisted", false, { buf = found })
+    vim.api.nvim_win_set_buf(win, found)
+    vim.api.nvim_win_set_cursor(win, {
+      row,
+      col,
+    })
+  else
+    vim.api.nvim_notify(
+      str.format("Buffer nor found for {}:{}:{}", file, row, col),
+      vim.log.levels.INFO,
+      { title = "Nvstp API" }
+    )
+  end
+
+  return true
+end
+
+function main.open_visual_selection_ref()
+  if main.is_visual() then
+    main.press_esc_key() -- Back to normal mode
+    vim.schedule(function()
+      local lines = main.get_visual_selection()[1]
+      local ref = table.unpack(str.split(lines, " "))
+      if #ref == 0 then
+        vim.api.nvim_notify(
+          "Empty visual selection",
+          vim.log.levels.ERROR,
+          { title = "Nvstp API" }
+        )
+      end
+      main.jump_buf_by_ref(ref)
+    end)
+  else
+    vim.api.nvim_notify("Not in visual mode", vim.log.levels.ERROR, { title = "Nvstp API" })
+  end
 end
 
 ---Returns all complete lines of the visual selection
@@ -177,7 +250,7 @@ function main.paste()
   if reg_str:sub(-1) == "\n" then
     vim.api.nvim_paste(reg_str:sub(1, -2), false, -1)
   else
-    vim.api.nvim_paste(reg_str,false, -1)
+    vim.api.nvim_paste(reg_str, false, -1)
   end
 end
 
@@ -226,6 +299,7 @@ function main.move_line_up()
   if not main.is_buf_modifiable_notify() then return end
   vim.api.nvim_command("move -2")
 end
+
 function main.move_line_down()
   if not main.is_buf_modifiable_notify() then return end
   vim.api.nvim_command("move +1")
@@ -308,19 +382,26 @@ function main.undo()
   if not main.is_buf_modifiable_notify() then return end
   vim.api.nvim_command("undo")
 end
+
 function main.redo()
   if not main.is_buf_modifiable_notify() then return end
   vim.api.nvim_command("redo")
 end
 
 function main.toggle_vterm() require("src.nvstp.term.api").toggle("vertical", true) end
+
 function main.toggle_hterm() require("src.nvstp.term.api").toggle("horizontal", true) end
+
 function main.toggle_fterm() require("src.nvstp.term.api").toggle("floating", true) end
 
 function main.tab_new() main.pnvim_command("tabnew") end
+
 function main.tab_prev() main.pnvim_command("tabprev") end
+
 function main.tab_next() main.pnvim_command("tabnext") end
+
 function main.tab_close() main.pnvim_command("tabclose") end
+
 function main.tab_rename()
   main.simple_input_popup({
     callback = function(text) main.pnvim_command("TabRename " .. tostring(text)) end,
@@ -333,11 +414,13 @@ end
 -- Placeholder for find/replace
 
 function main.find() end
+
 function main.find_replace() end
 
 -- Wincker
 
 function main.win_jump() require("src.nvstp.winker.init").jump() end
+
 function main.win_close()
   local res = require("src.nvstp.winker.init").select()
   if res == nil then return end
