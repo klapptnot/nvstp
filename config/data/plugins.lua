@@ -1,8 +1,6 @@
 return {
   -- required dependencies
   --#region
-  { "klapptnot/warm.lua", lazy = false },
-
   { "nvim-tree/nvim-web-devicons", lazy = true },
   { "nvim-lua/plenary.nvim", lazy = true },
   { "nvim-telescope/telescope.nvim", tag = "0.1.5" },
