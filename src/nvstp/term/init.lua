@@ -4,7 +4,6 @@
 local main = {}
 main.instances = {}
 main.opts = {
-  insert_mode = false, -- Enter to terminal with insert mode on
   send_keys = true, -- Send all pressed keys to terminal window
   no_line_nums = true, -- Turn off line numbers if they are turned on
   layout = {

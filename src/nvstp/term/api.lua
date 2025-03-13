@@ -76,7 +76,7 @@ function main.new(layout, shell)
   }
   main.total = main.total + 1
   -- Start on insert mode
-  if main.opts.insert_mode == true then vim.api.nvim_command("startinsert") end
+  if vim.v.count ~= 1 then vim.api.nvim_command("startinsert") end
   -- Return data to the caller
   return {}
 end
@@ -115,7 +115,7 @@ function main.show(keyname)
   main.instances[keyname].win = main.create_win(main.instances[keyname].lay)
   main.instances[keyname].vis = true -- Is visible now
   vim.api.nvim_win_set_buf(main.instances[keyname].win, main.instances[keyname].buf)
-  if main.opts.insert_mode == true then vim.api.nvim_command("startinsert") end
+  if vim.v.count ~= 1 then vim.api.nvim_command("startinsert") end
 end
 
 function main.close(keyname)
