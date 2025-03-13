@@ -56,6 +56,152 @@ function main.is_buf_modifiable_notify()
   return true
 end
 
+--- Check if path exists and it represents a `kind`
+---@param path string
+---@param kind "file"|"directory"
+---@return boolean
+function main.path_exists_and_is(path, kind)
+  ---@diagnostic disable-next-line: undefined-field
+  local path_info = vim.uv.fs_stat(path)
+  return path_info ~= nil and path_info.type == kind
+end
+
+--- Check for possible refs in current buffer, and open selected one
+--- @param deep? boolean Whether to check all colon-followed strings
+function main.find_and_open_refs(deep)
+  local pattern = "([%w%p]+%.%w+):?(%d*):?(%d*)"
+  if deep == "true" then pattern = "([%w%p]+):(%d*):?(%d*)" end
+  local api = vim.api
+  local fn = vim.fn
+
+  local current_buf = api.nvim_get_current_buf()
+
+  local lines = api.nvim_buf_get_lines(current_buf, 0, -1, false)
+  local content = table.concat(lines, "\n")
+
+  local paths = {}
+  for path, row, col in content:gmatch(pattern) do
+    table.insert(paths, {
+      path = path,
+      row = row ~= "" and tonumber(row) or 1,
+      col = col ~= "" and tonumber(col) or 1,
+    })
+  end
+
+  if #paths == 0 then
+    vim.notify(
+      "No file paths found in current buffer",
+      vim.log.levels.WARN,
+      { title = "Nvstp API" }
+    )
+    return
+  end
+
+  local base_dir = fn.getcwd()
+
+  local valid_paths = {}
+  for _, path_info in ipairs(paths) do
+    local path = path_info.path
+    local full_path = path
+
+    if not path:match("^/") then full_path = vim.fs.joinpath(base_dir, path) end
+
+    if main.path_exists_and_is(full_path, "file") then
+      table.insert(valid_paths, {
+        path = vim.fs.normalize(full_path),
+        row = path_info.row,
+        col = path_info.col,
+      })
+    end
+  end
+
+  if #valid_paths == 0 then
+    vim.notify("No valid file paths found", vim.log.levels.WARN, { title = "Nvstp API" })
+    return
+  end
+
+  local path_options = {}
+  for _, path_info in ipairs(valid_paths) do
+    local display = path_info.path
+    if path_info.row then
+      display = display .. ":" .. path_info.row
+      if path_info.col then display = display .. ":" .. path_info.col end
+    end
+    table.insert(path_options, display)
+  end
+
+  vim.ui.select(path_options, {
+    prompt = "Select a file to open:",
+    format_item = function(item) return item end,
+  }, function(selected)
+    if not selected then return end
+
+    local selected_idx = 0
+    for i, option in ipairs(path_options) do
+      if option == selected then
+        selected_idx = i
+        break
+      end
+    end
+
+    if selected_idx > 0 then
+      local path_info = valid_paths[selected_idx]
+
+      local win = api.nvim_get_current_win()
+      local buf = api.nvim_get_current_buf()
+
+      if api.nvim_get_option_value("filetype", { buf = buf }) == "terminal" then
+        api.nvim_win_close(win, true)
+        win = api.nvim_get_current_win()
+      end
+
+      local windows = api.nvim_list_wins()
+      if #windows > 1 then
+        local selected_win = require("src.nvstp.winker.init").select()
+        if selected_win and api.nvim_win_is_valid(selected_win.data.winid) then
+          win = selected_win.data.winid
+        else
+          if selected_win == nil then
+            vim.notify("No window selected", vim.log.levels.INFO, { title = "Nvstp API" })
+            return
+          else
+            vim.notify(
+              "Selected window is not valid",
+              vim.log.levels.ERROR,
+              { title = "Nvstp API" }
+            )
+            return
+          end
+        end
+      end
+
+      local ref_buf = fn.bufadd(path_info.path)
+
+      if not api.nvim_buf_is_valid(ref_buf) then
+        vim.notify(
+          "Could not create buffer for " .. path_info.path,
+          vim.log.levels.ERROR,
+          { title = "Nvstp API" }
+        )
+        return
+      end
+
+      local ok, _ = pcall(function() api.nvim_win_set_buf(win, ref_buf) end)
+
+      if not ok then
+        vim.notify("Buffer is not modifiable", vim.log.levels.ERROR, { title = "Nvstp API" })
+        return
+      end
+
+      if path_info.row ~= nil then
+        pcall(function() api.nvim_win_set_cursor(win, { path_info.row, path_info.col }) end)
+      end
+
+      vim.notify("Opened " .. path_info.path, vim.log.levels.INFO, { title = "Nvstp API" })
+    end
+  end)
+end
+
 --- Jump to a buffer using a string reference, like `main.c:32`
 ---@param ref string
 ---@return boolean
@@ -66,37 +212,31 @@ function main.jump_buf_by_ref(ref)
   local cwd = vim.fn.getcwd()
   row = tonumber(row or 1)
   col = tonumber(col or 1)
-  local found = nil
+  local ref_buf = nil
   for i, v in ipairs(bufs) do
-    names[i] = vim.api.nvim_buf_get_name(v)
-    if str.ends_with(names[i], file) then found = i end
+    if vim.api.nvim_buf_is_valid(v) then
+      names[i] = vim.api.nvim_buf_get_name(v)
+      if str.ends_with(names[i], file) then ref_buf = i end
+    end
   end
   -- treat reference as path
-  if found == nil then
+  if ref_buf == nil then
     local path = vim.fs.normalize(vim.fs.joinpath(cwd, file))
-    ---@diagnostic disable-next-line: undefined-field
-    if vim.uv.fs_stat(path) then
+    if main.path_exists_and_is(path, "file") then
       local buf = vim.fn.bufadd(path)
 
-      if buf ~= 0 then
-        found = buf
-        vim.api.nvim_set_option_value("buflisted", false, { buf = buf })
-      end
+      if buf ~= 0 then ref_buf = buf end
     else
       path = vim.fs.normalize(file)
-      ---@diagnostic disable-next-line: undefined-field
-      if vim.uv.fs_stat(path) then
+      if main.path_exists_and_is(path, "file") then
         local buf = vim.fn.bufadd(path)
 
-        if buf ~= 0 then
-          found = buf
-          vim.api.nvim_set_option_value("buflisted", false, { buf = buf })
-        end
+        if buf ~= 0 then ref_buf = buf end
       end
     end
   end
 
-  if found == nil then
+  if ref_buf == nil then
     vim.api.nvim_notify(
       str.format("Buffer not found for {}:{}:{}", file, row, col),
       vim.log.levels.INFO,
@@ -114,9 +254,11 @@ function main.jump_buf_by_ref(ref)
     win = vim.api.nvim_get_current_win()
   end
 
+  vim.api.nvim_set_option_value("buflisted", false, { buf = ref_buf })
+
   if #vim.api.nvim_list_wins() > 1 then
-    local wish_win = require("src.nvstp.winker.init").select()
-    if wish_win == nil then
+    local selected_win = require("src.nvstp.winker.init").select()
+    if selected_win == nil then
       vim.api.nvim_notify(
         "Invalid selection, try again",
         vim.log.levels.ERROR,
@@ -124,11 +266,11 @@ function main.jump_buf_by_ref(ref)
       )
       return false
     end
-    win = wish_win.data.winid
+    win = selected_win.data.winid
   end
 
-  vim.api.nvim_set_option_value("buflisted", false, { buf = found })
-  vim.api.nvim_win_set_buf(win, found)
+  vim.api.nvim_set_option_value("buflisted", false, { buf = ref_buf })
+  vim.api.nvim_win_set_buf(win, ref_buf)
   vim.api.nvim_win_set_cursor(win, {
     row,
     col,
