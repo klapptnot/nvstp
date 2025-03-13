@@ -149,6 +149,14 @@ return {
     desc = "Jump to type definition using LSP provider",
     opts = __opts__,
   },
+  {
+    meth = "textDocument/typeDefinition",
+    mapp = "<leader>dl",
+    mode = { "n" },
+    exec = vim.diagnostic.setloclist,
+    desc = "Open LSP provider diagnostic link window",
+    opts = __opts__,
+  },
   -- {
   --   meth = "workspace/symbol",
   --   mapp = "<leader>lS",

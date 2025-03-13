@@ -15,6 +15,13 @@ return {
     desc = "Save current file",
     opts = __def_opts_lua__,
   },
+  {
+    mapp = "<C-s>",
+    mode = { "n", "v", "i" },
+    exec = api.save,
+    desc = "Save current file",
+    opts = __def_opts_lua__,
+  },
 
   {
     mapp = "<C-q>",
@@ -121,22 +128,6 @@ return {
   },
 
   {
-    mapp = "<leader>g",
-    mode = { "n" },
-    exec = api.find,
-    desc = "Open search",
-    opts = __def_opts_lua__,
-  },
-
-  {
-    mapp = "<leader>r",
-    mode = { "n" },
-    exec = api.find_replace,
-    desc = "Open find and replace",
-    opts = __def_opts_lua__,
-  },
-
-  {
     mapp = "<A-Up>",
     mode = { "n", "i" },
     exec = api.move_line_up,
@@ -173,6 +164,14 @@ return {
     mode = { "v" },
     exec = api.open_visual_selection_ref,
     desc = "Open file ref from visual selection",
+    opts = __def_opts_lua__,
+  },
+
+  {
+    mapp = "<leader>fr",
+    mode = { "v", "n" },
+    exec = api.find_and_open_refs,
+    desc = "Open a path ref from buffer",
     opts = __def_opts_lua__,
   },
 
@@ -231,7 +230,6 @@ return {
     desc = "Toggle vertical terminal",
     opts = __def_opts_lua__,
   },
-
 
   {
     mapp = "<",
@@ -410,5 +408,35 @@ return {
     exec = 'p:let @+=@0<CR>:let @"=@0<CR>',
     desc = "Paste",
     opts = __def_opts_vim__,
+  },
+  -- Use gj|jk if no v:count
+  -- https://www.reddit.com/r/vim/comments/2k4cbr/problem_with_gj_and_gk
+  {
+    mapp = "k",
+    mode = { "v", "n" },
+    exec = "(v:count == 0 ? 'gk' : 'k')",
+    desc = "Move cursor up",
+    opts = { silent = true, expr = true },
+  },
+  {
+    mapp = "j",
+    mode = { "v", "n" },
+    exec = "(v:count == 0 ? 'gj' : 'j')",
+    desc = "Move cursor down",
+    opts = { silent = true, expr = true },
+  },
+  {
+    mapp = "<Up>",
+    mode = { "v", "n" },
+    exec = "(v:count == 0 ? 'gk' : 'k')",
+    desc = "Move cursor up",
+    opts = { silent = true, expr = true },
+  },
+  {
+    mapp = "<Down>",
+    mode = { "v", "n" },
+    exec = "(v:count == 0 ? 'gj' : 'j')",
+    desc = "Move cursor down",
+    opts = { silent = true, expr = true },
   },
 }
