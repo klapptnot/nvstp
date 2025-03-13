@@ -4,8 +4,9 @@
 local main = {}
 main.instances = {}
 main.opts = {
-  insert_mode = true, -- Enter to terminal with insert mode on
-  ask_to_quit = false, -- Ask to quit before closing window, or close directly
+  insert_mode = false, -- Enter to terminal with insert mode on
+  send_keys = true, -- Send all pressed keys to terminal window
+  no_line_nums = true, -- Turn off line numbers if they are turned on
   layout = {
     floating = {
       s = "rounded", -- Border style
@@ -21,7 +22,6 @@ main.opts = {
       w = 0.4, -- Width of vertical window N/100
     },
   },
-  send_keys = true, -- Send all pressed keys to terminal window
 }
 
 local tbl = require("warm.table")

@@ -46,8 +46,10 @@ function main.create_win(layout)
       })
     end,
   })[layout]() -- Create window
-  vim.wo.relativenumber = false -- Disable relativenumber for this window
-  vim.wo.number = false -- Disable line number for this window
+  if main.opts.no_line_nums == true then
+    vim.wo.relativenumber = false -- Disable relativenumber for this window
+    vim.wo.number = false -- Disable line number for this window
+  end
   return vim.api.nvim_get_current_win() -- return current window
 end
 
@@ -74,7 +76,7 @@ function main.new(layout, shell)
   }
   main.total = main.total + 1
   -- Start on insert mode
-  vim.api.nvim_command("startinsert")
+  if main.opts.insert_mode == true then vim.api.nvim_command("startinsert") end
   -- Return data to the caller
   return {}
 end
@@ -113,7 +115,7 @@ function main.show(keyname)
   main.instances[keyname].win = main.create_win(main.instances[keyname].lay)
   main.instances[keyname].vis = true -- Is visible now
   vim.api.nvim_win_set_buf(main.instances[keyname].win, main.instances[keyname].buf)
-  vim.api.nvim_command("startinsert")
+  if main.opts.insert_mode == true then vim.api.nvim_command("startinsert") end
 end
 
 function main.close(keyname)
