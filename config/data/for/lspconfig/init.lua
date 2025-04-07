@@ -1,7 +1,6 @@
 local main = { "neovim/nvim-lspconfig", event = { "BufReadPre", "BufNewFile", "BufWinEnter" } }
 local fns = {
   on_attach = function(client, bufnr)
-    -- local fmt = require("warm.str").format
     local mapps = require("config.data.for.lspconfig.mapping")
     for _, prop in ipairs(mapps) do
       if client.supports_method(prop.meth) then

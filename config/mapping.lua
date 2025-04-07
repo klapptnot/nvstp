@@ -75,8 +75,8 @@ end
 
 ---Apply all mappings to nvim
 function main:apply()
-  local rcall = require("warm.spr").rcall
-  local fmt = require("warm.str").format
+  local rcall = require("src.warm.spr").rcall
+  local fmt = string.format
 
   for _, props in pairs(self) do
     ---@cast props NvstpKeyMapp
@@ -88,7 +88,7 @@ function main:apply()
     for _, mode in ipairs(props.mode) do
       local remove = rcall(vim.api.nvim_set_keymap, mode, props.mapp, props.exec, props.opts)
       if not remove() then
-        print(fmt("Mapping error for '{}': {}", tostring(props.desc), remove.unwrap(true)))
+        print(fmt("Mapping error for '%s': %s", tostring(props.desc), remove.unwrap(true)))
       end
     end
   end

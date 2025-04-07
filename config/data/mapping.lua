@@ -401,11 +401,11 @@ return {
   },
 
   -- ^ Small hacks (vim expr)
-  -- Dont copy text replaced with p
+  -- do not save replaced selection
   {
     mapp = "p",
-    mode = { "v", "n" },
-    exec = 'p:let @+=@0<CR>:let @"=@0<CR>',
+    mode = { "x" },
+    exec = '"_dp',
     desc = "Paste",
     opts = __def_opts_vim__,
   },
