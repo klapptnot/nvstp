@@ -1,6 +1,6 @@
 -- More than mostly needed table functions
 
-local spr = require("warm.spr")
+local spr = require("src.warm.spr")
 local main = {}
 
 -- A accurate way to check is empty or empty items

@@ -1,5 +1,5 @@
-local color = require("warm.color")
-local tbl = require("warm.table")
+local color = require("src.warm.color")
+local tbl = require("src.warm.table")
 
 local colmt = {
   __tostring = function(t) return t[1] end,

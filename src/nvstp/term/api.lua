@@ -1,7 +1,7 @@
 -- terminal management API
 
 local main = {}
-local tbl = require("warm.table")
+local tbl = require("src.warm.table")
 main.opts = {}
 main.instances = {}
 main.total = 0

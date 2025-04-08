@@ -1,8 +1,8 @@
 -- nvim/modules/plugins/mappings helpers
 
 local main = {}
-local str = require("warm.str")
-local match = require("warm.spr").match
+local str = require("src.warm.str")
+local match = require("src.warm.spr").match
 
 ---Returns whether the current mode is visual mode or not
 ---@return boolean
@@ -403,11 +403,11 @@ function main.copy()
         vim.log.levels.INFO,
         { title = "Nvstp API" }
       )
-      vim.fn.setreg('"', lines)
+      vim.fn.setreg('+', lines)
     end)
   else
     vim.api.nvim_notify("Copied from 1 line", vim.log.levels.INFO, { title = "Nvstp API" })
-    vim.fn.setreg('"', vim.api.nvim_get_current_line())
+    vim.fn.setreg('+', vim.api.nvim_get_current_line())
   end
 end
 
@@ -419,7 +419,7 @@ function main.paste()
     vim.log.levels.INFO,
     { title = "Nvstp API" }
   )
-  local reg_str = tostring(vim.fn.getreg('"'))
+  local reg_str = tostring(vim.fn.getreg('+'))
   if reg_str:sub(-1) == "\n" then
     vim.api.nvim_paste(reg_str:sub(1, -2), false, -1)
   else

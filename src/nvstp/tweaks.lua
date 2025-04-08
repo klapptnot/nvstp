@@ -10,13 +10,8 @@ local tweaks_fns = {
   detect_indent = function()
     local function guess_set_indent()
       local a, b, c = vim.bo.shiftwidth, vim.bo.tabstop, vim.bo.softtabstop
-      local ok, indent = pcall(require, "furnace.gindent")
-      if not ok then
-        vim.notify("warm.lua plugin not available", vim.log.levels.ERROR, {})
-        return
-      end
-      local width = indent.guess()
-      if width == nil then width = 2 end
+      local width = require("src.warm.indent").guess()
+      if width == nil then return end
       vim.bo.shiftwidth = width
       vim.bo.tabstop = width
       vim.bo.softtabstop = width
@@ -36,14 +31,29 @@ local tweaks_fns = {
     end
 
     -- Set indentation based on guesses, works better btw
-    vim.api.nvim_create_user_command(
-      "NvstpGuessIndent",
-      guess_set_indent,
-      { desc = "Guess and set indent level [def: 2]" }
-    )
+    vim.api.nvim_create_user_command("NvstpIndentSet", function(opts)
+      local width = tonumber(opts.fargs[1])
+      assert(width ~= nil, "number is nil")
+      assert(width % 2 == 0, "number is not a even number")
+      if vim.bo.shiftwidth == width then return end
+
+      print(
+        string.format(
+          "Change from %d:%d:%d to %d",
+          vim.bo.shiftwidth,
+          vim.bo.tabstop,
+          vim.bo.softtabstop,
+          width
+        )
+      )
+
+      vim.bo.shiftwidth = width
+      vim.bo.tabstop = width
+      vim.bo.softtabstop = width
+    end, { desc = "Guess and set indent level [def: 2]", nargs = "+" })
     vim.api.nvim_create_autocmd({ "BufReadPost" }, {
       pattern = "*",
-      command = "NvstpGuessIndent",
+      callback = guess_set_indent,
     })
     NVSTP_TWEAKS.detect_indent = true
   end,

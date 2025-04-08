@@ -1,7 +1,7 @@
 -- configuration fast access
 
-local str = require("warm.str")
-local tbl = require("warm.table")
+local str = require("src.warm.str")
+local tbl = require("src.warm.table")
 
 local main = {}
 

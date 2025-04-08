@@ -1,6 +1,6 @@
 -- UTF-8 lib for Neovim until it has it by default
 
-local spr = require("warm.spr")
+local spr = require("src.warm.spr")
 local main = {
   -- This pattern matches ***one*** UTF-8 byte sequence
   charpattern = "[\0-\x7F\xC2-\xFD][\x80-\xBF]",

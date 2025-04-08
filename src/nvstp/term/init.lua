@@ -23,7 +23,7 @@ main.opts = {
   },
 }
 
-local tbl = require("warm.table")
+local tbl = require("src.warm.table")
 
 -- Main terminal object
 function main.setup(opts)

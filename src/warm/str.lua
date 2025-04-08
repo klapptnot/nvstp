@@ -1,6 +1,6 @@
 -- String manipulation utils
 
-local spr = require("warm.spr")
+local spr = require("src.warm.spr")
 local main = {}
 
 ---Remove trailing and leading spaces/linebreaks

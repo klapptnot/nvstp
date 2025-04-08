@@ -1,25 +1,26 @@
 local main = {}
 
-local path = require("warm.path")
-local str = require("warm.str")
-local tbl = require("warm.table")
+local str = require("src.warm.str")
+local tbl = require("src.warm.table")
+local uts = require("src.warm.uts")
 local util = require("src.nvstp.themes.util")
-local uts = require("warm.uts")
 -- Location to *this* file folder
 local meloc = uts.fwd()
 ---@cast meloc string
 
-local NVSTP_THEME_CACHE = path.join(NVSTP_CACHE, "themes")
+local NVSTP_THEME_CACHE = vim.fs.joinpath(NVSTP_CACHE, "themes")
 local THEME_SPRITES, THEME_NAMES = require("src.nvstp.themes.manifest"):unpack()
 local function is_valid_theme(name) return tbl.contains(THEME_SPRITES, name) end
+---@diagnostic disable-next-line: undefined-field
+local function path_exists(path) return vim.uv.fs_stat(path) ~= nil end
 
 local function generate_theme_script(thf)
-  if not path.exists(NVSTP_THEME_CACHE) then
+  if not path_exists(NVSTP_THEME_CACHE) then
     vim.fn.mkdir(NVSTP_THEME_CACHE, "p")
-    if not path.exists(NVSTP_THEME_CACHE) then return nil end
+    if not path_exists(NVSTP_THEME_CACHE) then return nil end
   end
 
-  local template = uts.file_as_str(path.join(meloc, "template.lua"))
+  local template = uts.file_as_str(vim.fs.joinpath(meloc, "template.lua"))
   local palette = util.extractable(dofile(thf))
 
   if template == nil or palette == nil then return nil end
@@ -74,12 +75,12 @@ end
 
 function main.apply(name, reload)
   assert(is_valid_theme(name), str.format("Theme '{}' is not defined", name))
-  local thf = path.join(meloc, "sprites", name .. ".lua")
-  assert(path.exists(thf), str.format("Theme '{}' does not exist", name))
+  local thf = vim.fs.joinpath(meloc, "sprites", name .. ".lua")
+  assert(path_exists(thf), str.format("Theme '{}' does not exist", name))
 
-  local thc = path.join(NVSTP_THEME_CACHE, name .. ".lua")
+  local thc = vim.fs.joinpath(NVSTP_THEME_CACHE, name .. ".lua")
 
-  if not path.exists(thc) or reload then
+  if not path_exists(thc) or reload then
     assert(
       main.compile(thf, thc),
       str.format(
@@ -97,8 +98,8 @@ end
 
 function main.rawgen(name)
   assert(is_valid_theme(name), str.format("Theme '{}' is not defined", name))
-  local thf = path.join(meloc, "sprites", name .. ".lua")
-  assert(path.exists(thf), str.format("Theme '{}' does not exist", name))
+  local thf = vim.fs.joinpath(meloc, "sprites", name .. ".lua")
+  assert(path_exists(thf), str.format("Theme '{}' does not exist", name))
   local ths = generate_theme_script(thf)
   assert(ths ~= nil, str.format("Unable to generate script for {}", name))
 

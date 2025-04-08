@@ -2,7 +2,7 @@
 --  It would be sad to run this :(
 
 local function uninstall_nvstp(all)
-  local fcall = require("warm.spr").fcall
+  local fcall = require("src.warm.spr").fcall
 
   local folders = {
     vim.fn.stdpath("config"),

@@ -2,9 +2,9 @@
 
 local main = {}
 
-local color = require("warm.color")
-local str = require("warm.str")
-local uts = require("warm.uts")
+local color = require("src.warm.color")
+local str = require("src.warm.str")
+local uts = require("src.warm.uts")
 
 local NVSTP_VIBIB_CACHE = vim.fs.joinpath(NVSTP_CACHE, "vibib.lua")
 
@@ -66,7 +66,7 @@ end
 -- }
 
 local HEADER = [[
-local str = require("warm.str")
+local str = require("src.warm.str")
 
 return function ()
   local modi = str.fallback(vim.api.nvim_get_mode().mode, "sp")

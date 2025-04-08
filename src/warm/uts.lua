@@ -1,6 +1,6 @@
 -- Not used more than a couple of times power functions
 
-local str = require("warm.str")
+local str = require("src.warm.str")
 local main = {}
 
 ---Sleep simple, allowing to sleep n seconds
