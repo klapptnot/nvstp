@@ -2,9 +2,8 @@
 -- !! Supports .flf fonts, commonly figlet fonts
 
 -- `fwd` File Work Directory
-local path = require("warm.path")
-local str = require("warm.str")
-local uts = require("warm.uts")
+local str = require("src.warm.str")
+local uts = require("src.warm.uts")
 
 ---@alias flffont.char { s:string, l:string[], c:string } Font character, [s]tring and [l]lines with [c]har to know which character is
 
@@ -26,8 +25,9 @@ local main = {}
 function main.load(fontname)
   ---@type string
   local meloc = uts.fwd()
-  local fontpath = path.join(meloc, fontname .. ".flf")
-  if not path.exists(fontpath) then fontpath = path.join(meloc, "ansi-regular.flf") end
+  if fontname == nil then fontname = "" end
+  local fontpath = vim.fs.joinpath(meloc, fontname .. ".flf")
+  if not vim.uv.fs_stat(fontpath) then fontpath = vim.fs.joinpath(meloc, "ansi-regular.flf") end
 
   ---@type string[]
   local file = {}
@@ -54,11 +54,12 @@ function main.load(fontname)
     if type(c) ~= "string" then error("unexpected type for argument #1") end
     c = c:sub(1, 1) -- Ensure #char == 1
     if self.chars[c] ~= nil then return self.chars[c] end
-    local cpos = c:byte() * self.height
+    local cpos = (c:byte() - 32) * self.height
     local cbig = { "", {} }
     for i = 1, self.height do
       -- stylua: ignore
       local ccbig = self.data[cpos + i]
+      ccbig = self.data[cpos + i]
         :gsub(".$", "")
         :gsub(self.blank:gsub("%$", "%%$"), " ")
         :gsub(" ", " ")

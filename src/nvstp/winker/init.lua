@@ -1,10 +1,28 @@
 -- nvstp winker (window picker)
 
 local fl = require("src.nvstp.winker.font")
-local utf8 = require("warm.utf8")
+local utf8 = require("src.warm.utf8")
 
 local drawer = {
   font = "ansi-regular",
+  chars = {
+    "Q",
+    "W",
+    "E",
+    "A",
+    "S",
+    "D",
+    "Z",
+    "X",
+    "C",
+    "R",
+    "F",
+    "1",
+    "2",
+    "3",
+    "4",
+  },
+  lookup = {},
 }
 
 local function shrinkInteger(val)
@@ -62,7 +80,6 @@ function drawer:spawn_floating_hint(wininfo)
   lines[1] = fill
   lines[#lines] = fill
 
-  -- local fmt = require("warm.str").format
   for i = 1, win.h - 2 do
     local bigchln = bigchar[i]
     -- if bigchln:sub(-1, -1) == " " then bigchln = bigchln:sub(1, -2) end
@@ -90,16 +107,6 @@ function drawer:spawn_floating_hint(wininfo)
     height = win.h,
     noautocmd = true,
     style = "minimal",
-    -- border = {
-    --   { "╭", "FloatBorder" },
-    --   { "─", "FloatBorder" },
-    --   { "╮", "FloatBorder" },
-    --   { "│", "FloatBorder" },
-    --   { "╯", "FloatBorder" },
-    --   { "─", "FloatBorder" },
-    --   { "╰", "FloatBorder" },
-    --   { "│", "FloatBorder" },
-    -- },
   })
 
   local hi = "WinckerFG_" .. color:sub(2)
@@ -140,35 +147,38 @@ local main = {}
 ---Pick a window and return information about its selection
 ---@return {char:integer, data:{winid:integer, color:string, char:string}}?
 function main.select()
-  -- List of all open windows
   local win_list = {}
-  -- Looping to enforce the window number to be the index
-  for _, v in ipairs(vim.api.nvim_list_wins()) do
-    local i = vim.fn.win_id2win(v)
-    win_list[i] = v
-  end
+  local lookup = {}
 
-  -- Iterate over the list of windows and gather window information
-  for nr, win in ipairs(win_list) do
+  for nr, win in ipairs(vim.api.nvim_list_wins()) do
+    -- local nr = vim.fn.win_id2win(win)
+    lookup[drawer.chars[nr]] = nr
     win_list[nr] = {
       winid = win,
       color = colorgen(win),
-      char = string.char(nr + 64),
+      char = drawer.chars[nr],
+      -- char = string.char(nr + 64),
     }
   end
 
   drawer:draw(win_list)
   vim.api.nvim_command("redraw")
 
-  local ok, ch = pcall(vim.fn.getchar) -- Will block exec until we got something
+  local ok, ch = pcall(vim.fn.getchar)
   drawer:clear()
   vim.api.nvim_command("redraw")
-  if type(ch) ~= "number" then return end -- Any <key>
-  -- if char (     Uppercase     ) or (      lowercase     )
-  if ok and ((ch > 64 and ch < 91) or (ch > 96 and ch < 123)) then
-    -- Allow lowercase by converting them to uppercase
-    return { char = ch, data = win_list[(string.byte(string.char(ch):upper()) - 64)] }
-  end
+  if not ok or type(ch) ~= "number" then return end -- Any <key>
+
+  if ch < 21 or ch > 126 then return end -- Invalid character range
+  if ch > 96 and ch < 123 then ch = ch - 32 end -- Uppercase it
+
+  local ich = lookup[vim.fn.nr2char(ch)]
+  if win_list[ich] == nil then return { char = ch, data = nil } end
+
+  return {
+    char = ch,
+    data = win_list[ich],
+  }
 end
 
 ---Pick a window and jump into it
@@ -177,7 +187,7 @@ function main.jump()
   if res == nil then return end
   if res.data == nil then
     vim.api.nvim_notify(
-      "Window with mark: '" .. string.char(res.char) .. "' does not exist",
+      "Window with mark: '" .. vim.fn.nr2char(res.char) .. "' does not exist",
       vim.log.levels.ERROR,
       { title = "Winker" }
     )
@@ -187,7 +197,7 @@ function main.jump()
     vim.api.nvim_set_current_win(res.data.winid)
   else
     vim.api.nvim_notify(
-      "Window with mark: '" .. string.char(res.char) .. "' is not a valid window",
+      "Window with mark: '" .. vim.fn.nr2char(res.char) .. "' is not a valid window",
       vim.log.levels.ERROR,
       { title = "Winker" }
     )
