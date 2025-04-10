@@ -59,7 +59,7 @@ function main.new(layout, shell)
   local buf = vim.api.nvim_create_buf(true, true) -- New buffer
   vim.api.nvim_set_option_value("filetype", "terminal", { buf = buf }) -- Set as a nvim terminal
   vim.api.nvim_set_option_value("buflisted", false, { buf = buf }) -- Set as unlisted/hidden
-  vim.api.nvim_win_set_buf(win, buf) -- Atach the buffer to window
+  vim.api.nvim_win_set_buf(win, buf) -- Attach the buffer to window
 
   local job = vim.fn.termopen(main.opts.shell or shell or vim.o.shell)
 

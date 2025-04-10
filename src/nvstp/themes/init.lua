@@ -2,8 +2,8 @@ local main = {}
 
 local str = require("src.warm.str")
 local tbl = require("src.warm.table")
-local uts = require("src.warm.uts")
 local util = require("src.nvstp.themes.util")
+local uts = require("src.warm.uts")
 -- Location to *this* file folder
 local meloc = uts.fwd()
 ---@cast meloc string
