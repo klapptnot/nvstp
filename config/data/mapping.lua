@@ -400,7 +400,14 @@ return {
     opts = __def_opts_vim__,
   },
 
-  -- ^ Small hacks (vim expr)
+  -- vim expr
+  {
+    mapp = "<A-m>",
+    mode = { "n", "i" },
+    exec = "<cmd> Man<CR>",
+    desc = "Open man page for symbol under cursor",
+    opts = __def_opts_vim__,
+  },
   -- do not save replaced selection
   {
     mapp = "p",
