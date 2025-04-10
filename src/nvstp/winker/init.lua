@@ -184,7 +184,14 @@ end
 ---Pick a window and jump into it
 function main.jump()
   local res = main.select()
-  if res == nil then return end
+  if res == nil then
+    vim.api.nvim_notify(
+      "Could not get selected window",
+      vim.log.levels.ERROR,
+      { title = "Winker" }
+    )
+    return
+  end
   if res.data == nil then
     vim.api.nvim_notify(
       "Window with mark: '" .. vim.fn.nr2char(res.char) .. "' does not exist",
@@ -193,15 +200,15 @@ function main.jump()
     )
     return
   end
-  if vim.api.nvim_win_is_valid(res.data.winid) then
-    vim.api.nvim_set_current_win(res.data.winid)
-  else
+  if not vim.api.nvim_win_is_valid(res.data.winid) then
     vim.api.nvim_notify(
       "Window with mark: '" .. vim.fn.nr2char(res.char) .. "' is not a valid window",
       vim.log.levels.ERROR,
       { title = "Winker" }
     )
+    return
   end
+  vim.api.nvim_set_current_win(res.data.winid)
 end
 
 return main
