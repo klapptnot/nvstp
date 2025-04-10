@@ -4,6 +4,22 @@ local main = {}
 local str = require("src.warm.str")
 local match = require("src.warm.spr").match
 
+function main.notify(msg, level)
+  if LESS_COMPLEX_THINGS == false then
+    vim.api.nvin_notify(msg, level, { title = "Nvstp API" })
+    return
+  end
+  local levels = {
+    [0] = "Normal", -- TRACE
+    "DiagnosticHint", -- DEBUG
+    "DiagnosticInfo", -- INFO
+    "DiagnosticWarn", -- WARN
+    "DiagnosticError", -- ERROR
+    "DiagnosticOk", -- OFF
+  }
+  vim.api.nvim_echo({ { ("[Nvstp API] " .. msg), levels[level] or "Normal" } }, true, {})
+end
+
 ---Returns whether the current mode is visual mode or not
 ---@return boolean
 function main.is_visual()
@@ -12,16 +28,26 @@ function main.is_visual()
   return (mode == "v" or mode == "V" or mode == "\\<C-V>")
 end
 
-function main.is_buf_modifiable()
-  return vim.api.nvim_get_option_value("modifiable", { buf = 0 })
+---@param buf? integer
+---@return boolean
+function main.is_buf_modifiable(buf)
+  return vim.api.nvim_get_option_value("modifiable", { buf = buf or 0 })
 end
 
-function main.is_buf_modified() return vim.api.nvim_get_option_value("modified", { buf = 0 }) end
+---@param buf? integer
+---@return boolean
+function main.is_buf_modified(buf)
+  return vim.api.nvim_get_option_value("modified", { buf = buf or 0 })
+end
 
-function main.is_buf_named() return vim.api.nvim_buf_get_name(0) ~= "" end
+---@param buf? integer
+---@return boolean
+function main.is_buf_named(buf) return vim.api.nvim_buf_get_name(buf or 0) ~= "" end
 
-function main.is_buf_empty()
-  local lns = vim.api.nvim_buf_get_lines(0, 0, -1, false)
+---@param buf? integer
+---@return boolean
+function main.is_buf_empty(buf)
+  local lns = vim.api.nvim_buf_get_lines(buf or 0, 0, -1, false)
   return lns[1] == "" and #lns == 1
 end
 
@@ -50,7 +76,7 @@ end
 -- Return if buffer is modifiable and notify user if not
 function main.is_buf_modifiable_notify()
   if not main.is_buf_modifiable() then
-    vim.notify("Buffer is not modifiable", vim.log.levels.ERROR, { title = "Nvstp API" })
+    main.notify("Buffer is not modifiable", vim.log.levels.ERROR)
     return false
   end
   return true
@@ -89,11 +115,7 @@ function main.find_and_open_refs(deep)
   end
 
   if #paths == 0 then
-    vim.notify(
-      "No file paths found in current buffer",
-      vim.log.levels.WARN,
-      { title = "Nvstp API" }
-    )
+    main.notify("No file paths found in current buffer", vim.log.levels.INFO)
     return
   end
 
@@ -116,7 +138,7 @@ function main.find_and_open_refs(deep)
   end
 
   if #valid_paths == 0 then
-    vim.notify("No valid file paths found", vim.log.levels.WARN, { title = "Nvstp API" })
+    main.notify("No valid file paths found", vim.log.levels.INFO)
     return
   end
 
@@ -162,14 +184,10 @@ function main.find_and_open_refs(deep)
           win = selected_win.data.winid
         else
           if selected_win == nil then
-            vim.notify("No window selected", vim.log.levels.INFO, { title = "Nvstp API" })
+            main.notify("No window selected", vim.log.levels.INFO)
             return
           else
-            vim.notify(
-              "Selected window is not valid",
-              vim.log.levels.ERROR,
-              { title = "Nvstp API" }
-            )
+            main.notify("Selected window is not valid", vim.log.levels.ERROR)
             return
           end
         end
@@ -178,18 +196,14 @@ function main.find_and_open_refs(deep)
       local ref_buf = fn.bufadd(path_info.path)
 
       if not api.nvim_buf_is_valid(ref_buf) then
-        vim.notify(
-          "Could not create buffer for " .. path_info.path,
-          vim.log.levels.ERROR,
-          { title = "Nvstp API" }
-        )
+        main.notify("Could not create buffer for " .. path_info.path, vim.log.levels.ERROR)
         return
       end
 
       local ok, _ = pcall(function() api.nvim_win_set_buf(win, ref_buf) end)
 
       if not ok then
-        vim.notify("Buffer is not modifiable", vim.log.levels.ERROR, { title = "Nvstp API" })
+        main.notify("Buffer is not modifiable", vim.log.levels.ERROR)
         return
       end
 
@@ -197,7 +211,7 @@ function main.find_and_open_refs(deep)
         pcall(function() api.nvim_win_set_cursor(win, { path_info.row, path_info.col }) end)
       end
 
-      vim.notify("Opened " .. path_info.path, vim.log.levels.INFO, { title = "Nvstp API" })
+      main.notify("Opened " .. path_info.path, vim.log.levels.INFO)
     end
   end)
 end
@@ -210,8 +224,10 @@ function main.jump_buf_by_ref(ref)
   local names = {}
   local file, row, col = table.unpack(str.split(ref, ":"))
   local cwd = vim.fn.getcwd()
-  row = tonumber(row or 1)
-  col = tonumber(col or 1)
+  ---@diagnostic disable-next-line: cast-local-type
+  row = tonumber(row) or 1
+  ---@diagnostic disable-next-line: cast-local-type
+  col = tonumber(col) or 1
   local ref_buf = nil
   for i, v in ipairs(bufs) do
     if vim.api.nvim_buf_is_valid(v) then
@@ -237,10 +253,9 @@ function main.jump_buf_by_ref(ref)
   end
 
   if ref_buf == nil then
-    vim.api.nvim_notify(
+    main.notify(
       str.format("Buffer not found for {}:{}:{}", file, row, col),
-      vim.log.levels.INFO,
-      { title = "Nvstp API" }
+      vim.log.levels.INFO
     )
     return false
   end
@@ -259,11 +274,7 @@ function main.jump_buf_by_ref(ref)
   if #vim.api.nvim_list_wins() > 1 then
     local selected_win = require("src.nvstp.winker.init").select()
     if selected_win == nil then
-      vim.api.nvim_notify(
-        "Invalid selection, try again",
-        vim.log.levels.ERROR,
-        { title = "Nvstp API" }
-      )
+      main.notify("Invalid selection, try again", vim.log.levels.ERROR)
       return false
     end
     win = selected_win.data.winid
@@ -285,17 +296,11 @@ function main.open_visual_selection_ref()
     vim.schedule(function()
       local lines = main.get_visual_selection()[1]
       local ref = table.unpack(str.split(lines, " "))
-      if #ref == 0 then
-        vim.api.nvim_notify(
-          "Empty visual selection",
-          vim.log.levels.ERROR,
-          { title = "Nvstp API" }
-        )
-      end
+      if #ref == 0 then main.notify("Empty visual selection", vim.log.levels.ERROR) end
       main.jump_buf_by_ref(ref)
     end)
   else
-    vim.api.nvim_notify("Not in visual mode", vim.log.levels.ERROR, { title = "Nvstp API" })
+    main.notify("Not in visual mode", vim.log.levels.ERROR)
   end
 end
 
@@ -398,28 +403,20 @@ function main.copy()
     main.press_esc_key() -- Back to normal mode
     vim.schedule(function()
       local lines = main.get_visual_selection()
-      vim.api.nvim_notify(
-        "Copied from " .. #lines .. " line(s)",
-        vim.log.levels.INFO,
-        { title = "Nvstp API" }
-      )
-      vim.fn.setreg('+', lines)
+      main.notify("Copied from " .. #lines .. " line(s)", vim.log.levels.INFO)
+      vim.fn.setreg("+", lines)
     end)
   else
-    vim.api.nvim_notify("Copied from 1 line", vim.log.levels.INFO, { title = "Nvstp API" })
-    vim.fn.setreg('+', vim.api.nvim_get_current_line())
+    main.notify("Copied from 1 line", vim.log.levels.INFO)
+    vim.fn.setreg("+", vim.api.nvim_get_current_line())
   end
 end
 
 ---Paste the contents of " register to the cursor position in buffer
 function main.paste()
   if not main.is_buf_modifiable_notify() then return end
-  vim.api.nvim_notify(
-    "Paste last copied/yanked text",
-    vim.log.levels.INFO,
-    { title = "Nvstp API" }
-  )
-  local reg_str = tostring(vim.fn.getreg('+'))
+  main.notify("Paste last copied/yanked text", vim.log.levels.INFO)
+  local reg_str = tostring(vim.fn.getreg("+"))
   if reg_str:sub(-1) == "\n" then
     vim.api.nvim_paste(reg_str:sub(1, -2), false, -1)
   else
@@ -429,20 +426,18 @@ end
 
 function main.save()
   if not main.is_buf_named() then
-    vim.api.nvim_notify(
+    main.notify(
       "Buffer is not named, has no associated file. run :w <file_name>",
-      vim.log.levels.ERROR,
-      { title = "Nvstp API" }
+      vim.log.levels.ERROR
     )
     return
   elseif
     vim.bo[vim.fn.bufnr("%")].buftype:find("term") ~= nil
     and vim.bo[vim.fn.bufnr("%")].filetype == "terminal"
   then
-    vim.api.nvim_notify(
+    main.notify(
       "Buffer is a terminal: has no associated file, to save use v mode and run :'<,'>w <file_name>",
-      vim.log.levels.ERROR,
-      { title = "Nvstp API" }
+      vim.log.levels.ERROR
     )
     return
   end
@@ -479,10 +474,9 @@ function main.move_line_down()
 end
 
 function main.resize_win_interact()
-  vim.api.nvim_notify(
-    "Reading keys to resize window. To exit, press any key not in\n     H J K L",
-    vim.log.levels.INFO,
-    { title = "Winsize > Nvstp API" }
+  main.notify(
+    "Reading keys to resize window. To exit, press any key not in: H J K L",
+    vim.log.levels.INFO
   )
   while true do
     local ok, ch = pcall(vim.fn.getchar) -- Will block exec until we got something
@@ -495,11 +489,7 @@ function main.resize_win_interact()
       or ch == 73
       or ch == 105
     then
-      vim.api.nvim_notify(
-        "Interactive window resizing done",
-        vim.log.levels.INFO,
-        { title = "Winsize > Nvstp API" }
-      )
+      main.notify("Interactive window resizing done", vim.log.levels.INFO)
       break
     end
     -- stylua: ignore
@@ -584,43 +574,47 @@ function main.tab_rename()
   })
 end
 
--- Placeholder for find/replace
-
-function main.find() end
-
-function main.find_replace() end
-
 -- Wincker
 
 function main.win_jump() require("src.nvstp.winker.init").jump() end
 
 function main.win_close()
   local res = require("src.nvstp.winker.init").select()
-  if res == nil then return end
+  if res == nil then
+    main.notify("Could not get selected window", vim.log.levels.ERROR)
+    return
+  end
   if res.data == nil then
-    vim.api.nvim_notify(
-      "Window with mark: '" .. string.char(res.char) .. "' does not exist",
-      vim.log.levels.ERROR,
-      { title = "Wincker > Nvstp API" }
+    main.notify(
+      "Window with mark: '" .. vim.fn.nr2char(res.char) .. "' does not exist",
+      vim.log.levels.ERROR
     )
     return
   end
-  -- main.quit closes all windows
-  if vim.api.nvim_win_is_valid(res.data.winid) then
-    if not main.is_buf_modified() then
-      -- File is not modified, quit directly
-      vim.cmd("q!")
-    elseif main.is_buf_named() and main.is_buf_modified() then
-      -- File has a name, prompt to save before quitting
-      local choice = vim.fn.confirm("Save changes before quitting?", "&Yes\n&No\n&Cancel", 3)
 
-      if choice == 1 then vim.cmd("wq!") end
-      if choice == 2 then vim.cmd("q!") end
-    else
-      -- File is modified, but no name assigned, prompt to cancel or force quit
-      local choice = vim.fn.confirm("Changes will be lost, quit anyways?", "&Yes\n&No", 2)
-      if choice == 1 then vim.cmd("q!") end
+  local win = res.data.winid
+
+  if not vim.api.nvim_win_is_valid(win) then return end
+  local buf = vim.api.nvim_win_get_buf(win)
+
+  if not main.is_buf_modified(buf) then
+    -- File is not modified, quit directly
+    vim.api.nvim_win_close(win, true)
+    return
+  end
+
+  if main.is_buf_named(buf) then
+    -- File has a name, prompt to save before quitting
+    local choice = vim.fn.confirm("Save changes before quitting?", "&Yes\n&No\n&Cancel", 3)
+
+    if choice == 1 then
+      vim.api.nvim_buf_call(buf, function() vim.api.nvim_command("wq!") end)
     end
+    if choice == 2 then vim.api.nvim_win_close(win, true) end
+  else
+    -- File is modified, and no name assigned, prompt to cancel or force quit
+    local choice = vim.fn.confirm("Changes will be lost, quit anyways?", "&Yes\n&No", 2)
+    if choice == 1 then vim.api.nvim_win_close(win, true) end
   end
 end
 
@@ -758,11 +752,7 @@ end
 
 function main.toggle_inlayhints()
   if vim.lsp.inlay_hint == nil then
-    vim.api.nvim_notify(
-      "Inlay hints are not available",
-      vim.log.levels.ERROR,
-      { title = "Nvstp API" }
-    )
+    main.notify("Inlay hints are not available", vim.log.levels.ERROR)
     return
   end
   vim.lsp.inlay_hint.enable(not vim.lsp.inlay_hint.is_enabled({ bufnr = 0 }), { bufnr = 0 })
@@ -845,21 +835,16 @@ function main.wrap_selection()
   }
   local ok, ch = pcall(vim.fn.getchar) -- Will block exec until we got something
   ---@cast ch integer
-  if not ok or type(ch) ~= "number" then return end
-  if not ("\"'`(){}[]<>¿?¡!"):has(string.char(ch)) then
-    vim.api.nvim_notify(
-      str.format("Cannot wrap with {} ({})", string.char(ch), ch),
-      vim.log.levels.ERROR,
-      { title = "Nvstp API" }
+  if not ok then main.notify("Failed to get character", vim.log.levels.ERROR) end
+  local char = vim.fn.nr2char(ch)
+  if not ("\"'`(){}[]<>¿?¡!"):has(char) then
+    main.notify(
+      str.format("Cannot wrap selection with {} ({})", char, ch),
+      vim.log.levels.ERROR
     )
     return
   end
-  local pair = pairs[string.char(ch)]
-  if pair == nil then
-    pair = pairs[string.char(ch + 3)]
-    if pair == nil then return end
-  end
-  main.selection_wrapper(pair)
+  main.selection_wrapper(pairs[char])
 end
 
 -- Give all functions a name for debugging purposes

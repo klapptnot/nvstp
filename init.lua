@@ -17,6 +17,8 @@ do -- Add config folder to package.path
       .. p.d .. nvcfg .. p.s .. p.p .. ".lua"
 end
 
+LESS_COMPLEX_THINGS = true
+
 -- Space is <leader> key
 vim.g.mapleader = " "
 
