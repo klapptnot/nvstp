@@ -5,7 +5,7 @@ local fns_on_attach = function(client, bufnr)
   local mapps = require("config.data.for.lspconfig.mapping")
 
   for _, prop in ipairs(mapps) do
-    if client.supports_method(prop.meth) then
+    if client:supports_method(prop.meth) then
       prop.opts.desc = prop.desc -- Just to not nest items
       prop.opts.callback = prop.exec
 

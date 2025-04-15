@@ -58,9 +58,11 @@ return {
     name = "notify",
     lazy = false,
     init = function()
-      -- Just to ignore notification
-      require("notify").setup({ background_colour = "#000000" })
-      vim.notify = require("notify")
+      if LESS_COMPLEX_THINGS == false then
+        -- Just to ignore notification
+        require("notify").setup({ background_colour = "#000000" })
+        vim.notify = require("notify")
+      end
     end,
   },
 

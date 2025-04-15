@@ -36,7 +36,7 @@ vim.api.nvim_create_user_command("NvstpConfig", function(opts)
     }, item)
   end
   if main.cur_into ~= nil and not tbl.contains({ "--return", "--reload" }, arg1) then
-    vim.api.nvim_notify(
+    vim.notify(
       "A config file (" .. main.cur_into[1] .. ") is already open",
       vim.log.levels.INFO,
       notify_params
@@ -56,17 +56,17 @@ vim.api.nvim_create_user_command("NvstpConfig", function(opts)
     return
   elseif arg1 == "--return" then
     if main.cur_into == nil then
-      vim.api.nvim_notify("No config to close", vim.log.levels.INFO, notify_params)
+      vim.notify("No config to close", vim.log.levels.INFO, notify_params)
       return
     end
     local bufto = main.cur_into[3]
     if main.cur_into[4] == 0 then
-      vim.api.nvim_notify("Config file closed successfully", vim.log.levels.INFO, notify_params)
+      vim.notify("Config file closed successfully", vim.log.levels.INFO, notify_params)
       vim.api.nvim_buf_delete(bufto, { force = true })
       main.cur_into = nil
       return
     end
-    vim.api.nvim_notify(
+    vim.notify(
       "Config file closed successfully, returning to the previous buffer",
       vim.log.levels.INFO,
       notify_params
@@ -91,7 +91,7 @@ vim.api.nvim_create_user_command("NvstpConfig", function(opts)
     local ov_file = "/custom/init.lua"
     if str.boolean(opts.fargs[2]) then
       if not is_cfg_file(opts.fargs[2]) then
-        vim.api.nvim_notify(
+        vim.notify(
           "The requested config file does not exist",
           vim.log.levels.WARN,
           notify_params
@@ -108,7 +108,7 @@ vim.api.nvim_create_user_command("NvstpConfig", function(opts)
   -- arg1 should be a configuration file
   local file = arg1
   if main.cur_into ~= nil then
-    vim.api.nvim_notify(
+    vim.notify(
       "Config file '" .. main.cur_into[1] .. "' already open",
       vim.log.levels.WARN,
       notify_params
@@ -116,11 +116,7 @@ vim.api.nvim_create_user_command("NvstpConfig", function(opts)
     return
   end
   if not is_cfg_file(file) then
-    vim.api.nvim_notify(
-      "The requested config file does not exist",
-      vim.log.levels.WARN,
-      notify_params
-    )
+    vim.notify("The requested config file does not exist", vim.log.levels.WARN, notify_params)
     return
   end
   local cfg_type = "/config/data/"

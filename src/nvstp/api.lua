@@ -4,22 +4,6 @@ local main = {}
 local str = require("src.warm.str")
 local match = require("src.warm.spr").match
 
-function main.notify(msg, level)
-  if LESS_COMPLEX_THINGS == false then
-    vim.api.nvin_notify(msg, level, { title = "Nvstp API" })
-    return
-  end
-  local levels = {
-    [0] = "Normal", -- TRACE
-    "DiagnosticHint", -- DEBUG
-    "DiagnosticInfo", -- INFO
-    "DiagnosticWarn", -- WARN
-    "DiagnosticError", -- ERROR
-    "DiagnosticOk", -- OFF
-  }
-  vim.api.nvim_echo({ { ("[Nvstp API] " .. msg), levels[level] or "Normal" } }, true, {})
-end
-
 ---Returns whether the current mode is visual mode or not
 ---@return boolean
 function main.is_visual()
@@ -76,7 +60,7 @@ end
 -- Return if buffer is modifiable and notify user if not
 function main.is_buf_modifiable_notify()
   if not main.is_buf_modifiable() then
-    main.notify("Buffer is not modifiable", vim.log.levels.ERROR)
+    vim.notify("Buffer is not modifiable", vim.log.levels.ERROR, {})
     return false
   end
   return true
@@ -115,7 +99,7 @@ function main.find_and_open_refs(deep)
   end
 
   if #paths == 0 then
-    main.notify("No file paths found in current buffer", vim.log.levels.INFO)
+    vim.notify("No file paths found in current buffer", vim.log.levels.INFO, {})
     return
   end
 
@@ -138,7 +122,7 @@ function main.find_and_open_refs(deep)
   end
 
   if #valid_paths == 0 then
-    main.notify("No valid file paths found", vim.log.levels.INFO)
+    vim.notify("No valid file paths found", vim.log.levels.INFO, {})
     return
   end
 
@@ -184,10 +168,10 @@ function main.find_and_open_refs(deep)
           win = selected_win.data.winid
         else
           if selected_win == nil then
-            main.notify("No window selected", vim.log.levels.INFO)
+            vim.notify("No window selected", vim.log.levels.INFO)
             return
           else
-            main.notify("Selected window is not valid", vim.log.levels.ERROR)
+            vim.notify("Selected window is not valid", vim.log.levels.ERROR, {})
             return
           end
         end
@@ -196,14 +180,14 @@ function main.find_and_open_refs(deep)
       local ref_buf = fn.bufadd(path_info.path)
 
       if not api.nvim_buf_is_valid(ref_buf) then
-        main.notify("Could not create buffer for " .. path_info.path, vim.log.levels.ERROR)
+        vim.notify("Could not create buffer for " .. path_info.path, vim.log.levels.ERROR, {})
         return
       end
 
       local ok, _ = pcall(function() api.nvim_win_set_buf(win, ref_buf) end)
 
       if not ok then
-        main.notify("Buffer is not modifiable", vim.log.levels.ERROR)
+        vim.notify("Buffer is not modifiable", vim.log.levels.ERROR, {})
         return
       end
 
@@ -211,7 +195,7 @@ function main.find_and_open_refs(deep)
         pcall(function() api.nvim_win_set_cursor(win, { path_info.row, path_info.col }) end)
       end
 
-      main.notify("Opened " .. path_info.path, vim.log.levels.INFO)
+      vim.notify("Opened " .. path_info.path, vim.log.levels.INFO, {})
     end
   end)
 end
@@ -253,9 +237,10 @@ function main.jump_buf_by_ref(ref)
   end
 
   if ref_buf == nil then
-    main.notify(
+    vim.notify(
       str.format("Buffer not found for {}:{}:{}", file, row, col),
-      vim.log.levels.INFO
+      vim.log.levels.INFO,
+      {}
     )
     return false
   end
@@ -274,7 +259,7 @@ function main.jump_buf_by_ref(ref)
   if #vim.api.nvim_list_wins() > 1 then
     local selected_win = require("src.nvstp.winker.init").select()
     if selected_win == nil then
-      main.notify("Invalid selection, try again", vim.log.levels.ERROR)
+      vim.notify("Invalid selection, try again", vim.log.levels.ERROR, {})
       return false
     end
     win = selected_win.data.winid
@@ -296,11 +281,11 @@ function main.open_visual_selection_ref()
     vim.schedule(function()
       local lines = main.get_visual_selection()[1]
       local ref = table.unpack(str.split(lines, " "))
-      if #ref == 0 then main.notify("Empty visual selection", vim.log.levels.ERROR) end
+      if #ref == 0 then vim.notify("Empty visual selection", vim.log.levels.ERROR, {}) end
       main.jump_buf_by_ref(ref)
     end)
   else
-    main.notify("Not in visual mode", vim.log.levels.ERROR)
+    vim.notify("Not in visual mode", vim.log.levels.ERROR, {})
   end
 end
 
@@ -403,11 +388,11 @@ function main.copy()
     main.press_esc_key() -- Back to normal mode
     vim.schedule(function()
       local lines = main.get_visual_selection()
-      main.notify("Copied from " .. #lines .. " line(s)", vim.log.levels.INFO)
+      vim.notify("Copied from " .. #lines .. " line(s)", vim.log.levels.INFO, {})
       vim.fn.setreg("+", lines)
     end)
   else
-    main.notify("Copied from 1 line", vim.log.levels.INFO)
+    vim.notify("Copied from 1 line", vim.log.levels.INFO, {})
     vim.fn.setreg("+", vim.api.nvim_get_current_line())
   end
 end
@@ -415,7 +400,7 @@ end
 ---Paste the contents of " register to the cursor position in buffer
 function main.paste()
   if not main.is_buf_modifiable_notify() then return end
-  main.notify("Paste last copied/yanked text", vim.log.levels.INFO)
+  vim.notify("Paste last copied/yanked text", vim.log.levels.INFO, {})
   local reg_str = tostring(vim.fn.getreg("+"))
   if reg_str:sub(-1) == "\n" then
     vim.api.nvim_paste(reg_str:sub(1, -2), false, -1)
@@ -426,18 +411,20 @@ end
 
 function main.save()
   if not main.is_buf_named() then
-    main.notify(
+    vim.notify(
       "Buffer is not named, has no associated file. run :w <file_name>",
-      vim.log.levels.ERROR
+      vim.log.levels.ERROR,
+      {}
     )
     return
   elseif
     vim.bo[vim.fn.bufnr("%")].buftype:find("term") ~= nil
     and vim.bo[vim.fn.bufnr("%")].filetype == "terminal"
   then
-    main.notify(
+    vim.notify(
       "Buffer is a terminal: has no associated file, to save use v mode and run :'<,'>w <file_name>",
-      vim.log.levels.ERROR
+      vim.log.levels.ERROR,
+      {}
     )
     return
   end
@@ -474,9 +461,10 @@ function main.move_line_down()
 end
 
 function main.resize_win_interact()
-  main.notify(
+  vim.notify(
     "Reading keys to resize window. To exit, press any key not in: H J K L",
-    vim.log.levels.INFO
+    vim.log.levels.INFO,
+    {}
   )
   while true do
     local ok, ch = pcall(vim.fn.getchar) -- Will block exec until we got something
@@ -489,7 +477,7 @@ function main.resize_win_interact()
       or ch == 73
       or ch == 105
     then
-      main.notify("Interactive window resizing done", vim.log.levels.INFO)
+      vim.notify("Interactive window resizing done", vim.log.levels.INFO, {})
       break
     end
     -- stylua: ignore
@@ -581,13 +569,14 @@ function main.win_jump() require("src.nvstp.winker.init").jump() end
 function main.win_close()
   local res = require("src.nvstp.winker.init").select()
   if res == nil then
-    main.notify("Could not get selected window", vim.log.levels.ERROR)
+    vim.notify("Could not get selected window", vim.log.levels.ERROR, {})
     return
   end
   if res.data == nil then
-    main.notify(
+    vim.notify(
       "Window with mark: '" .. vim.fn.nr2char(res.char) .. "' does not exist",
-      vim.log.levels.ERROR
+      vim.log.levels.ERROR,
+      {}
     )
     return
   end
@@ -752,7 +741,7 @@ end
 
 function main.toggle_inlayhints()
   if vim.lsp.inlay_hint == nil then
-    main.notify("Inlay hints are not available", vim.log.levels.ERROR)
+    vim.notify("Inlay hints are not available", vim.log.levels.ERROR, {})
     return
   end
   vim.lsp.inlay_hint.enable(not vim.lsp.inlay_hint.is_enabled({ bufnr = 0 }), { bufnr = 0 })
@@ -835,12 +824,13 @@ function main.wrap_selection()
   }
   local ok, ch = pcall(vim.fn.getchar) -- Will block exec until we got something
   ---@cast ch integer
-  if not ok then main.notify("Failed to get character", vim.log.levels.ERROR) end
+  if not ok then vim.notify("Failed to get character", vim.log.levels.ERROR, {}) end
   local char = vim.fn.nr2char(ch)
   if not ("\"'`(){}[]<>¿?¡!"):has(char) then
-    main.notify(
+    vim.notify(
       str.format("Cannot wrap selection with {} ({})", char, ch),
-      vim.log.levels.ERROR
+      vim.log.levels.ERROR,
+      {}
     )
     return
   end
