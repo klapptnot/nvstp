@@ -1,6 +1,6 @@
 return {
   "simrat39/symbols-outline.nvim",
-  event = { "BufEnter", "BufNewFile" },
+  event = { "LspAttach" },
   lazy = true,
   config = function()
     require("symbols-outline").setup({
