@@ -15,6 +15,7 @@ function main.range(i, j)
 
   if i > j then
     function rnext(n) return n - 1 end
+
     function in_range(n) return (n >= j and n <= i) end
   end
 
@@ -103,7 +104,7 @@ end
 ---@generic V
 ---@param it string|integer
 ---@param call? boolean
----@return fun(with:table<string|integer, some|V|fun():V>):V
+---@return fun(with:table<string|integer, some|fun():V>):V
 function main.match(it, call)
   if call == true then
     return function(with)
@@ -212,6 +213,7 @@ function main.rcall(fn, ...)
         if unpck == true then return table.unpack(self.rv) end
         return self.rv
       end
+
       -- Return the result value of the function, or a fallback value
       --
       -- Returns as a list if `unpck` ~= `true`
@@ -230,6 +232,7 @@ function main.rcall(fn, ...)
           return f
         end
       end
+
       return self.ok
     end,
   })
@@ -248,17 +251,12 @@ function main.validate(t, args)
     if cond then return s end
     return f
   end
-  local function s_has(s, str) return s:find(str) ~= nil end
-  local concat_sep = str_fallback(t.sep, ", ")
 
-  local default_ate = str_fallback(
-    t.ate,
-    "Unexpected argument type at position {:pos:}: Expected {:qw1:} {:qw2:} [{:types:}], got '{:type:}'"
-  )
-  local default_ave = str_fallback(
-    t.ave,
-    "Invalid value for argument at position {:pos:}: Expected values are [{:pv:}], got '{:arg:}'"
-  )
+  local concat_sep = str_fallback(t.sep, ", ")
+  local type_err_msg = str_fallback(t.type_err, "bad argument #%d (expected one of [%s], got [%s])")
+  local value_err_msg =
+    str_fallback(t.value_err, "bad argument #%d (expected value from [%s], got [%s]")
+
   for i, arg_rule in ipairs(t) do
     local expected_types
     if type(arg_rule) == "table" then
@@ -266,42 +264,37 @@ function main.validate(t, args)
     else
       expected_types = { arg_rule }
     end
-    local expected_values = arg_rule.aev
-    local arg_type_error_message = str_fallback(arg_rule.ate, default_ate)
-    local arg_value_error_message = str_fallback(arg_rule.ave, default_ave)
+    local expected_values = arg_rule.from
     local arg = args[i]
     -- Check if the argument matches any of the expected types
-    local unexpected_type = true
+    local type_err = true
+    local try_nil = false
     local arg_type = type(arg)
     for _, expected_type in ipairs(expected_types) do
-      if
-        not s_has(
-          "some,nil,boolean,number,string,table,function,thread,userdata",
-          expected_type
-        )
-      then
-        error("Invalid data type '" .. expected_type .. "'")
-      end
       -- "some" is "Any value but nil"
-      if expected_type == "some" and arg_type == "nil" then break end
+      ---@cast expected_type string
+      if expected_type:sub(-1) == "?" then
+        expected_type = expected_type:sub(1, -2)
+        try_nil = true
+      end
+      if arg_type == "nil" then
+        if expected_type == "some" then break end
+        if try_nil then
+          type_err = false
+        end
+      end
       if arg_type == expected_type or expected_type == "some" then
-        unexpected_type = false
+        type_err = false
         break
       end
     end
-    if unexpected_type then
-      local qw = { "type", "is" }
-      if #expected_types > 1 then -- Match words with the item count
-        qw = { "types", "are" }
-      end
+    if type_err then
       error(
-        arg_type_error_message
-          :gsub("{:qw1:}", qw[1])
-          :gsub("{:qw2:}", qw[2])
-          :gsub("{:pos:}", tostring(i))
-          :gsub("{:type:}", arg_type)
-          :gsub("{:types:}", table.concat(expected_types, concat_sep))
-          :gsub("{:arg:}", tostring(arg))
+        str_fallback(arg_rule.type_err, type_err_msg):format(
+          i,
+          table.concat(expected_types, concat_sep),
+          arg_type
+        )
       )
     end
     -- Check if the argument is within the expected values
@@ -315,10 +308,11 @@ function main.validate(t, args)
       end
       if not is_valid_value then
         error(
-          arg_value_error_message
-            :gsub("{:arg:}", tostring(arg))
-            :gsub("{:pos:}", tostring(i))
-            :gsub("{:pv:}", table.concat(expected_values, concat_sep))
+          str_fallback(arg_rule.type_err, value_err_msg):format(
+            i,
+            table.concat(expected_values, concat_sep),
+            tostring(arg)
+          )
         )
       end
     end

@@ -261,7 +261,7 @@ function main.offset(s, n, i)
   s, n, i = table.unpack(spr.parse_args({
     "string",
     "number",
-    { "nil", "number", def = 1 },
+    { "number?", def = 1 },
   }, { s, n, i }))
   ---@cast s string
   ---@cast n integer
@@ -304,8 +304,8 @@ function main.codepoint(s, i, j)
   ---@diagnostic disable-next-line: cast-local-type
   s, i, j = table.unpack(spr.parse_args({
     "string",
-    { "nil", "number", def = 1 },
-    { "nil", "number", def = nil },
+    { "number?", def = 1 },
+    { "number?", def = nil },
   }, { s, i, j }))
   ---@cast s string
   ---@cast i integer

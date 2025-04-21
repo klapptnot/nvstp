@@ -1,15 +1,12 @@
--- nvim/modules/plugins/mappings helpers
-
 local main = {}
 local str = require("src.warm.str")
 local match = require("src.warm.spr").match
 
 ---Returns whether the current mode is visual mode or not
 ---@return boolean
-function main.is_visual()
-  -- local mode = vim.fn.mode()
-  local mode = vim.api.nvim_get_mode().mode
-  return (mode == "v" or mode == "V" or mode == "\\<C-V>")
+function main.is_visual_mode()
+  local mode = vim.api.nvim_get_mode().mode:sub(1, 1)
+  return (mode == "v" or mode == "V" or mode == "")
 end
 
 ---@param buf? integer
@@ -35,11 +32,9 @@ function main.is_buf_empty(buf)
   return lns[1] == "" and #lns == 1
 end
 
----Send ESC key press, ussually to go back to normal mode
----@param mode? string
-function main.press_esc_key(mode)
-  if mode == nil then mode = "n" end
-  vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes("<Esc>", true, false, true), mode, true)
+---Send ESC key press, usually to go back to normal mode
+function main.press_esc_key()
+  vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes("<Esc>", true, false, true), "m", true)
 end
 
 ---Move cursor like VS Code does when Home key is pressed
@@ -47,7 +42,7 @@ function main.home_key()
   local line_nr, cursor_pos = table.unpack(vim.api.nvim_win_get_cursor(0))
   local line = vim.api.nvim_buf_get_lines(0, line_nr - 1, line_nr, false)[1]
 
-  local content_pos = (string.find(line, "%S") or 1) - 1 or 0
+  local content_pos = (string.find(line, "%S") or 1) - 1
   -- Check if cursor is at the beginning of the line content
   if cursor_pos == content_pos then
     vim.api.nvim_win_set_cursor(0, { line_nr, 0 })
@@ -276,7 +271,7 @@ function main.jump_buf_by_ref(ref)
 end
 
 function main.open_visual_selection_ref()
-  if main.is_visual() then
+  if main.is_visual_mode() then
     main.press_esc_key() -- Back to normal mode
     vim.schedule(function()
       local lines = main.get_visual_selection()[1]
@@ -348,16 +343,7 @@ function main.simple_input_popup(opts)
     height = opts.height,
     title = title_value,
     style = "minimal",
-    border = {
-      { "╭", "AccHiYogurtF" },
-      { "─", "AccHiYogurtF" },
-      { "╮", "AccHiYogurtF" },
-      { "│", "AccHiYogurtF" },
-      { "╯", "AccHiYogurtF" },
-      { "─", "AccHiYogurtF" },
-      { "╰", "AccHiYogurtF" },
-      { "│", "AccHiYogurtF" },
-    },
+    border = "rounded",
   })
   vim.cmd("normal A")
   vim.cmd("startinsert")
@@ -382,9 +368,9 @@ function main.pnvim_command(command)
   end
 end
 
----Same as pressing 'y' or 'yy', copy the line or selection to the " register
+---Same as pressing 'y' or 'yy', copy the line or selection to the `+` register
 function main.copy()
-  if main.is_visual() then
+  if main.is_visual_mode() then
     main.press_esc_key() -- Back to normal mode
     vim.schedule(function()
       local lines = main.get_visual_selection()
@@ -418,8 +404,8 @@ function main.save()
     )
     return
   elseif
-    vim.bo[vim.fn.bufnr("%")].buftype:find("term") ~= nil
-    and vim.bo[vim.fn.bufnr("%")].filetype == "terminal"
+      vim.bo[vim.fn.bufnr("%")].buftype:find("term") ~= nil
+      and vim.bo[vim.fn.bufnr("%")].filetype == "terminal"
   then
     vim.notify(
       "Buffer is a terminal: has no associated file, to save use v mode and run :'<,'>w <file_name>",
@@ -428,7 +414,7 @@ function main.save()
     )
     return
   end
-  vim.api.nvim_command("w!") -- save
+  vim.api.nvim_command("w!")         -- save
   vim.api.nvim_command("stopinsert") -- back to normal mode
   main.press_esc_key()
 end
@@ -450,6 +436,24 @@ function main.quit()
   end
 end
 
+function main.comment()
+  local line_start, line_end
+  local ref_position = nil
+
+  if main.is_visual_mode() then
+    local _, start_line, _, _ = table.unpack(vim.fn.getpos("'<"))
+    local _, end_line, _, _ = table.unpack(vim.fn.getpos("'>"))
+
+    line_start = math.min(start_line, end_line)
+    line_end = math.max(start_line, end_line)
+    main.press_esc_key()
+  else
+    line_start = vim.fn.line(".")
+    line_end = line_start
+  end
+  require("vim._comment").toggle_lines(line_start, line_end, ref_position)
+end
+
 function main.move_line_up()
   if not main.is_buf_modifiable_notify() then return end
   vim.api.nvim_command("move -2")
@@ -469,19 +473,16 @@ function main.resize_win_interact()
   while true do
     local ok, ch = pcall(vim.fn.getchar) -- Will block exec until we got something
     if
-      not ok
-      or type(ch) ~= "number"
-      -- Upper or lower case h i j k l
-      or not ((ch > 71 and ch < 77) or (ch > 103 and ch < 109))
-      -- But i does not do the same
-      or ch == 73
-      or ch == 105
+        not ok
+        or type(ch) ~= "number"
+        -- Upper or lower case h i j k l
+        or not ((ch > 71 and ch < 77) or (ch > 103 and ch < 109))
     then
       vim.notify("Interactive window resizing done", vim.log.levels.INFO, {})
       break
     end
     -- stylua: ignore
-    local _ = match(string.char(ch), true)({
+    local _ = match(vim.fn.nr2char(ch), true)({
       -- uppercase 73-76
       H = main.horiz_decsize,
       J = main.vert_decsize,
@@ -539,11 +540,11 @@ function main.redo()
   vim.api.nvim_command("redo")
 end
 
-function main.toggle_vterm() require("src.nvstp.term.api").toggle("vertical", true) end
+function main.toggle_vterm() require("src.nvstp.term").toggle("vertical", true) end
 
-function main.toggle_hterm() require("src.nvstp.term.api").toggle("horizontal", true) end
+function main.toggle_hterm() require("src.nvstp.term").toggle("horizontal", true) end
 
-function main.toggle_fterm() require("src.nvstp.term.api").toggle("floating", true) end
+function main.toggle_fterm() require("src.nvstp.term").toggle("floating", true) end
 
 function main.tab_new() main.pnvim_command("tabnew") end
 
@@ -607,56 +608,86 @@ function main.win_close()
   end
 end
 
--- Scroll emulation
-
 -- Scroll the buffer view upcomment (cursor up)
+---@param winnr integer
 ---@param lines? number
-function main.scroll_up(lines)
+function main.scroll_up(winnr, lines)
   if lines == nil then lines = 1 end
-  local current_window = vim.api.nvim_get_current_win()
-  local current_cursor = vim.api.nvim_win_get_cursor(current_window)
+  local current_cursor = vim.api.nvim_win_get_cursor(winnr)
   local new_cursor = { current_cursor[1] - lines, current_cursor[2] }
   -- Prevent setting the cursor position outside the buffer
   if new_cursor[1] <= 0 then return end
-  vim.api.nvim_win_set_cursor(current_window, new_cursor)
+  vim.api.nvim_win_set_cursor(winnr, new_cursor)
 end
 
 -- Scroll the buffer view down (cursor down)
+---@param winnr integer
 ---@param lines? number
-function main.scroll_down(lines)
+function main.scroll_down(winnr, lines)
   if lines == nil then lines = 1 end
-  local buf_size = vim.api.nvim_buf_line_count(0)
-  local current_window = vim.api.nvim_get_current_win()
-  local current_cursor = vim.api.nvim_win_get_cursor(current_window)
+  local buf_size = vim.api.nvim_buf_line_count(vim.api.nvim_win_get_buf(winnr))
+  local current_cursor = vim.api.nvim_win_get_cursor(winnr)
   local new_cursor = { current_cursor[1] + lines, current_cursor[2] }
   -- Prevent setting the cursor position outside the buffer
   if new_cursor[1] > buf_size then return end
-  vim.api.nvim_win_set_cursor(current_window, new_cursor)
+  vim.api.nvim_win_set_cursor(winnr, new_cursor)
+end
+
+-- Find the first floating window with nofile + markdown and scroll
+---@param lines number
+function main.scroll_markdown_float(lines)
+  local wins = vim.api.nvim_list_wins()
+  for _, win in ipairs(wins) do
+    local config = vim.api.nvim_win_get_config(win)
+    if config.border ~= nil then -- it's floating
+      local buf = vim.api.nvim_win_get_buf(win)
+      if vim.bo[buf].buftype == "nofile" and vim.bo[buf].filetype == "markdown" then
+        local info = vim.fn.getwininfo(win)[1]
+        lines = math.max(info.topline + lines, 1)
+        vim.schedule(function()
+          vim.api.nvim_buf_call(
+            buf,
+            function() vim.api.pnvim_command("normal! " .. lines .. "zt") end
+          )
+        end)
+        return -- do it on the FIRST match and bounce
+      end
+    end
+  end
+
+  local info = vim.fn.getwininfo(vim.api.nvim_get_current_win())[1]
+  local target = math.max(info.topline + lines, 1)
+
+  vim.api.pnvim_command("normal! " .. target .. "zt")
 end
 
 -- Function to get the appropriate indent string (spaces or tabs)
-function main.get_indent_string()
+---@param count integer?
+---@return string
+function main.get_indent_string(count)
+  count = count or 1
   if vim.o.expandtab == true then
-    return string.rep(" ", vim.o.tabstop)
+    return string.rep(" ", vim.o.tabstop * count)
   else
-    return "\t"
+    return string.rep("\t", count)
   end
 end
 
 -- Function to add indentation
 function main.add_indent()
   if not main.is_buf_modifiable_notify() then return end
+  local count = vim.v.count1
+  local indent_str = main.get_indent_string(count)
   -- Check if Neovim is in visual mode
-  if not main.is_visual() then
+  if not main.is_visual_mode() then
     -- If not in visual mode, operate on the current line
     local current_line = vim.api.nvim_get_current_line()
-    local indent_str = main.get_indent_string()
     local new_line = indent_str .. current_line -- Add the appropriate indentation
     vim.api.nvim_set_current_line(new_line)
   else
     -- If in visual mode, operate on the selected range
     main.press_esc_key(vim.fn.mode()) -- Back to normal mode
-    vim.schedule(function() -- Run later to read marks
+    vim.schedule(function()           -- Run later to read marks
       local line_start = vim.api.nvim_buf_get_mark(0, "<")[1]
       local line_end = vim.api.nvim_buf_get_mark(0, ">")[1]
       if line_start == line_end then line_start = line_start - 1 end
@@ -665,7 +696,6 @@ function main.add_indent()
       local lines = vim.api.nvim_buf_get_lines(0, line_start - 1, line_end, false)
       for i, line in pairs(lines) do
         local ln = line_start + (i - 1)
-        local indent_str = main.get_indent_string()
         local new_line = indent_str .. line -- Add the appropriate indentation
         vim.api.nvim_buf_set_lines(0, ln - 1, ln, false, { new_line })
       end
@@ -676,17 +706,18 @@ end
 -- Function to remove indentation
 function main.remove_indent()
   if not main.is_buf_modifiable_notify() then return end
+  local count = vim.v.count1
+  local indent_str = main.get_indent_string(count)
   -- Check if Neovim is in visual mode
-  if not main.is_visual() then
+  if not main.is_visual_mode() then
     -- If not in visual mode, operate on the current line
     local current_line = vim.api.nvim_get_current_line()
-    local indent_str = main.get_indent_string()
     local new_line = current_line:gsub("^" .. indent_str, "") -- Remove leading whitespace or tabs
     vim.api.nvim_set_current_line(new_line)
   else
     -- If in visual mode, operate on the selected range
     main.press_esc_key(vim.fn.mode()) -- Back to normal mode
-    vim.schedule(function() -- Run later to read marks
+    vim.schedule(function()           -- Run later to read marks
       local line_start = vim.api.nvim_buf_get_mark(0, "<")[1]
       local line_end = vim.api.nvim_buf_get_mark(0, ">")[1]
       if line_start == line_end then line_start = line_start - 1 end
@@ -695,56 +726,11 @@ function main.remove_indent()
       local lines = vim.api.nvim_buf_get_lines(0, line_start - 1, line_end, false)
       for i, line in pairs(lines) do
         local ln = line_start + (i - 1)
-        local indent_str = main.get_indent_string()
         local new_line = line:gsub("^" .. indent_str, "") -- Remove leading whitespace or tabs
         vim.api.nvim_buf_set_lines(0, ln - 1, ln, false, { new_line })
       end
     end)
   end
-end
-
--- Close the buffer but not the window
-function main.close_buf()
-  -- Replace current buffer with a empty buffer and close it
-  local function do_close_buffer()
-    local current_buffer = vim.api.nvim_get_current_buf()
-    local current_win = vim.api.nvim_get_current_win()
-    vim.api.nvim_win_set_buf(current_win, vim.api.nvim_create_buf(true, true))
-    vim.api.nvim_buf_delete(current_buffer, { force = true })
-  end
-  if not main.is_buf_modified() then
-    -- File is not modified, close directly
-    do_close_buffer()
-  elseif main.is_buf_named() and main.is_buf_modified() then
-    -- File has a name, prompt to save before quitting
-    local choice =
-      vim.fn.confirm("Save changes before closing buffer?", "&Yes\n&No\n&Cancel", 3)
-
-    if choice == 1 then vim.cmd("w!") end
-    if choice == 2 then do_close_buffer() end
-  else
-    -- File is modified, but no name assigned, prompt to cancel or force quit
-    local choice = vim.fn.confirm("Changes will be lost, close anyways?", "&Yes\n&No", 2)
-    if choice == 1 then do_close_buffer() end
-  end
-end
-
-function main.toggle_file_tree()
-  -- Close the file tree only when buffer is the Tree (may be wrong)
-  if str.starts_with((vim.fn.bufname() or "-"), "neo-tree") then
-    -- The mapping for it <C-b> is masked by neotree
-    vim.api.nvim_command("Neotree close")
-  else
-    vim.api.nvim_command("Neotree focus")
-  end
-end
-
-function main.toggle_inlayhints()
-  if vim.lsp.inlay_hint == nil then
-    vim.notify("Inlay hints are not available", vim.log.levels.ERROR, {})
-    return
-  end
-  vim.lsp.inlay_hint.enable(not vim.lsp.inlay_hint.is_enabled({ bufnr = 0 }), { bufnr = 0 })
 end
 
 -- Duplicate current visual selection
@@ -779,7 +765,7 @@ function main.selection_wrapper(pair)
   if pair == nil then return end -- This never happens with keyboard shortcuts
 
   -- Get visual selection range
-  main.press_esc_key(vim.fn.mode()) -- Back to normal mode
+  main.press_esc_key() -- Back to normal mode
   vim.schedule(function()
     local line_start = vim.fn.getpos("'<")[2]
     local col_start = vim.fn.getpos("'<")[3]
@@ -796,14 +782,11 @@ function main.selection_wrapper(pair)
       local ln_end = lines[#lines]:sub(1, col_end) .. pair[2] .. lines[#lines]:sub(col_end + 1)
       vim.api.nvim_buf_set_lines(cur_buf, line_end - 1, line_end, false, { ln_end })
     else -- One line
-      local ln = string.format(
-        "%s%s%s%s%s",
-        lines[1]:sub(1, col_start - 1),
-        pair[1],
-        lines[1]:sub(col_start, col_end),
-        pair[2],
-        lines[1]:sub(col_end + 1)
-      )
+      local ln = lines[1]:sub(1, col_start - 1)
+          .. pair[1]
+          .. lines[1]:sub(col_start, col_end)
+          .. pair[2]
+          .. lines[1]:sub(col_end + 1)
       vim.api.nvim_buf_set_lines(cur_buf, line_start - 1, line_start, false, { ln })
     end
   end)
@@ -838,11 +821,11 @@ function main.wrap_selection()
 end
 
 -- Give all functions a name for debugging purposes
-for name, fun in pairs(main) do
-  main.k = setmetatable({ func = fun }, {
-    __call = function(me, ...) return me.func(...) end,
-    __tostring = function() return name end,
-  })
-end
+-- for name, fun in pairs(main) do
+--   main[name] = setmetatable({ func = fun }, {
+--     __call = function(me, ...) return me.func(...) end,
+--     __tostring = function() return name end,
+--   })
+-- end
 
 return main

@@ -8,11 +8,6 @@ return {
 
   { "folke/trouble.nvim", event = { "BufReadPre", "BufNewFile" } },
   { "RRethy/vim-illuminate", event = { "BufReadPre", "BufNewFile" } },
-  {
-    "numToStr/Comment.nvim",
-    opts = {},
-    event = { "BufReadPre", "BufNewFile" },
-  },
   { "stevearc/dressing.nvim" },
 
   require("config.data.for.wf"),
@@ -28,7 +23,6 @@ return {
   require("config.data.for.null_ls"),
   require("config.data.for.masonlsp"),
   require("config.data.for.lspconfig"),
-  { "mg979/vim-visual-multi", event = { "UIEnter" } },
   -- { "folke/which-key.nvim", event = "VeryLazy", },
 
   {
@@ -58,7 +52,7 @@ return {
     name = "notify",
     lazy = false,
     init = function()
-      if LESS_COMPLEX_THINGS == false then
+      if NVSTP.less_complex_things == false then
         -- Just to ignore notification
         require("notify").setup({ background_colour = "#000000" })
         vim.notify = require("notify")

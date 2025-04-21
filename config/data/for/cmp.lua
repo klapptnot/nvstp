@@ -1,30 +1,30 @@
 -- stylua: ignore
 local kind_icons = {
-  Text          = "",
-  Method        = "󰆧",
-  Function      = "󰊕",
-  Constructor   = "",
-  Field         = "󰇽",
-  Variable      = "󰂡",
-  Class         = "󰠱",
-  Interface     = "",
-  Module        = "",
-  Property      = "󰜢",
-  Unit          = "",
-  Value         = "󰎠",
-  Enum          = "",
-  Keyword       = "󰌋",
-  Snippet       = "",
-  Color         = "󰏘",
-  File          = "󰈙",
-  Reference     = "",
-  Folder        = "󰉋",
-  EnumMember    = "",
-  Constant      = "󰏿",
-  Struct        = "",
-  Event         = "",
-  Operator      = "󰆕",
-  TypeParameter = "󰅲",
+  Text          = " ",
+  Method        = "󰆧 ",
+  Function      = "󰊕 ",
+  Constructor   = " ",
+  Field         = "󰇽 ",
+  Variable      = "󰂡 ",
+  Class         = "󰠱 ",
+  Interface     = " ",
+  Module        = " ",
+  Property      = "󰜢 ",
+  Unit          = " ",
+  Value         = "󰎠 ",
+  Enum          = " ",
+  Keyword       = "󰌋 ",
+  Snippet       = " ",
+  Color         = "󰏘 ",
+  File          = "󰈙 ",
+  Reference     = " ",
+  Folder        = "󰉋 ",
+  EnumMember    = " ",
+  Constant      = "󰏿 ",
+  Struct        = " ",
+  Event         = " ",
+  Operator      = "󰆕 ",
+  TypeParameter = "󰅲 ",
 }
 
 local borders = {
@@ -75,6 +75,7 @@ return {
       "hrsh7th/cmp-nvim-lsp",
       "hrsh7th/cmp-cmdline",
       "hrsh7th/cmp-buffer",
+      "hrsh7th/cmp-emoji",
       "hrsh7th/cmp-path",
       "hrsh7th/cmp-calc",
       "saadparwaiz1/cmp_luasnip",
@@ -89,11 +90,9 @@ return {
         completion = {
           side_padding = 0, -- flat_dark
           border = borders,
-          winhighlight = "Normal:Normal,FloatBorder:FloatBorder,CursorLine:Visual,Search:None",
         },
         documentation = {
           border = borders,
-          winhighlight = "Normal:CMPBorder",
         },
       },
       snippet = {
@@ -104,22 +103,22 @@ return {
         ghost_text = true,
       },
       formatting = {
+        fields = { "abbr", "kind", "menu" },
         format = function(entry, vim_item)
           -- load lspkind icons
-          vim_item.kind = string.format("%s %s", kind_icons[vim_item.kind], vim_item.kind)
+          vim_item.kind = kind_icons[vim_item.kind] .. " " ..  vim_item.kind
 
-
-          --     
+          --       |
           -- stylua: ignore
           vim_item.menu = ({
-            nvim_lsp = " 󰒌 ",
-            nvim_lua = "  ",
-            luasnip  = "  ",
-            buffer   = "  ",
-            path     = "  ",
-            calc     = " 󰃬 ",
-            cmdline  = "  "
-          })[entry.source.name] or '[ANY]'
+            nvim_lsp = "󰒌 ",
+            nvim_lua = " ",
+            luasnip  = " ",
+            buffer   = " ",
+            path     = " ",
+            calc     = "󰃬 ",
+            cmdline  = " "
+          })[entry.source.name] or " "
 
           return vim_item
         end,
@@ -128,17 +127,32 @@ return {
         ["<C-Up>"] = cmp.mapping.scroll_docs(-8),
         ["<C-Down>"] = cmp.mapping.scroll_docs(8),
         ["<C-o>"] = cmp.mapping.open_docs(),
-        ["<Tab>"] = cmp.mapping.confirm({ select = false }),
-        ["<CR>"] = cmp.mapping.confirm({ select = false }),
+        ["<Cr>"] = cmp.mapping.confirm({ select = false }),
         ["<Esc>"] = cmp.mapping.close(),
         ["<Up>"] = cmp.mapping.select_prev_item({ behavior = "select" }),
         ["<Down>"] = cmp.mapping.select_next_item({ behavior = "select" }),
+        ["<Tab>"] = cmp.mapping(function(fallback)
+          if luasnip.locally_jumpable(1) then
+            luasnip.jump(1)
+          else
+            fallback()
+          end
+        end, { "s" }),
+
+        ["<S-Tab>"] = cmp.mapping(function(fallback)
+          if luasnip.locally_jumpable(-1) then
+            luasnip.jump(-1)
+          else
+            fallback()
+          end
+        end, { "s" }),
       },
       sources = {
         { name = "nvim_lua" },
         { name = "nvim_lsp" },
         { name = "treesitter" },
         { name = "luasnip" },
+        { name = "emoji" },
         { name = "path" },
         { name = "calc" },
         {

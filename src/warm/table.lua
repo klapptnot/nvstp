@@ -83,7 +83,7 @@ end
 ---@param force? boolean
 ---@return table
 function main.extend(ts, td, force)
-  spr.validate({ "table", "table", { "nil", "boolean" } }, { ts, td, force })
+  spr.validate({ "table", "table", { "boolean?" } }, { ts, td, force })
   if main.is_empty(ts) then return td end
   if main.is_empty(td) then return ts end
   local res = ts
@@ -146,12 +146,17 @@ end
 ---@param recurse? boolean
 ---@return table
 function main.filter(tbl, condition, recurse)
+  ---@diagnostic disable-next-line: cast-local-type
   tbl, condition, recurse = table.unpack(
     spr.parse_args(
-      { "table", "function", { "nil", "boolean", def = false } },
+      { "table", "function", { "boolean?", def = false } },
       { tbl, condition, recurse }
     )
   )
+  ---@cast tbl table
+  ---@cast condition fun(k, v): boolean
+  ---@cast recurse boolean?
+
   local result = {}
   for k, v in pairs(tbl) do
     if type(v) == "table" and recurse then
@@ -174,12 +179,13 @@ end
 ---@param tbl table
 ---@param val any
 ---@return boolean
+---@return integer
 function main.contains(tbl, val)
   spr.validate({ "table", "some" }, { tbl, val })
-  for _, v in pairs(tbl) do
-    if v == val then return true end
+  for i, v in pairs(tbl) do
+    if v == val then return true, i end
   end
-  return false
+  return false, 0
 end
 
 ---Returns true if all items are some (not nil) or true, otherwise false.
@@ -209,9 +215,12 @@ end
 ---@param recurse? boolean
 ---@return table<boolean>
 function main.boolean(tbl, recurse)
+  ---@diagnostic disable-next-line: cast-local-type
   tbl, recurse = table.unpack(
-    spr.parse_args({ "table", { "boolean", "nil", def = false } }, { tbl, recurse })
+    spr.parse_args({ "table", { "boolean?", def = false } }, { tbl, recurse })
   )
+  ---@cast tbl table
+  ---@cast recurse boolean?
   local recursive = (recurse ~= nil and recurse ~= false) or false
   local result = {}
   for k, v in pairs(tbl) do
@@ -269,7 +278,6 @@ end
 function main.iter(tbl)
   spr.validate({ "table" }, { tbl })
   -- A table with one item only... is not worth it
-  if #main.get_keys(tbl) < 2 then error("cannot return values from tiny tables") end
   local ks = nil
   return function()
     local k, v = next(tbl, ks)
@@ -328,7 +336,7 @@ end
 ---@param idx? integer
 ---@return any
 function main.choose(tbl, idx)
-  spr.validate({ "table", { "nil", "number" } }, { tbl, idx })
+  spr.validate({ "table", "number?" }, { tbl, idx })
   if idx ~= nil and tbl[idx] ~= nil then return tbl[idx] end
   return tbl[math.random(#tbl)]
 end
@@ -351,7 +359,7 @@ end
 ---@nodiscard
 function main.unpack(tbl, i, j, keys)
   spr.validate(
-    { "table", { "nil", "number" }, { "nil", "number" }, { "nil", "table" } },
+    { "table", "number?", "number?", "number?"},
     { tbl, i, j, keys }
   )
   -- Manage negative numbers
@@ -374,198 +382,5 @@ function main.unpack(tbl, i, j, keys)
   end
   return table.unpack(res)
 end
-
----Return the JSON string representation of a Lua table
--- Do not use
----@param tbl table
----@param indent? number
----@param ignorefn? boolean
----@return string
-function main.jsonify(tbl, indent, ignorefn, __nested__)
-  if __nested__ ~= "__nested__" and __nested__ ~= "__key__" then
-    local args = spr.parse_args({
-      "table",
-      { "nil", "number", def = 1 },
-      { "nil", "boolean", def = false },
-    }, { tbl, indent, ignorefn })
-    tbl, indent, ignorefn = table.unpack(args, 1, #args)
-  else -- a nested execution
-    local type_of_val = type(tbl)
-    if type_of_val == "string" then
-      return '"' .. tbl .. '"'
-    elseif type_of_val == "function" then
-      local retstr = '"fun(...):any"'
-      if ignorefn then retstr = '""' end
-      if __nested__ == "__key__" then
-        retstr = '"' .. tostring(tbl):match("[^%s]+$") .. ':fun():any"'
-      end
-      return retstr
-    elseif type_of_val == "table" then
-      if __nested__ == "__key__" then
-        return '"' .. tostring(tbl):match("[^%s]+$") .. ':table"'
-      end
-    else
-      return tostring(tbl)
-    end
-  end
-  ---@cast indent number
-  -- Here tbl should always be a table
-  local next_key, _ = next(tbl)
-  local start, ends = "{", "}"
-  if type(next_key) == "number" then
-    start, ends = "[", "]"
-  end
-  local json_str = start .. "\n"
-  local comma = false
-  for key, value in pairs(tbl) do
-    if comma then
-      json_str = json_str .. ",\n"
-    else
-      comma = true
-    end
-    local val_str = main.jsonify(value, indent + 1, ignorefn, "__nested__")
-    if type(key) == "number" then
-      json_str = json_str .. string.rep("  ", indent) .. val_str
-    else
-      local key_str = main.jsonify(key, indent, ignorefn, "__key__")
-      json_str = json_str .. string.rep("  ", indent) .. key_str .. ": " .. val_str
-    end
-  end
-  json_str = json_str .. "\n" .. string.rep("  ", indent - 1) .. ends
-  return json_str
-end
-
----Get a formatted string representation of the table
----@param tbl table
----@param opts? {indent:number, ignore:string[]|integer[], ignore_func:boolean, recurse:integer|nil}
----@return string
-function main.stringify(tbl, opts)
-  local dopts = {
-    indent = 1,
-    ignore_func = true,
-    ignore = {},
-    recurse = nil,
-  }
-  if type(tbl) ~= "table" then return tostring(tbl) end
-  tbl, opts =
-    table.unpack(spr.parse_args({ "table", { "nil", "table", def = dopts } }, { tbl, opts }))
-  if main.is_empty(tbl) then return "{}" end
-  -- Set up options
-  if not opts.__nested__ then
-    opts.indent, opts.ignore_func, opts.ignore, opts.recurse = table.unpack(spr.parse_args({
-      { "nil", "number", def = 1 },
-      { "nil", "boolean", def = true },
-      { "nil", "table", def = {} },
-      { "nil", "number" },
-    }, { opts.indent, opts.ignore_func, opts.ignore, opts.recurse }))
-  end
-  opts.spacing = string.rep("  ", opts.indent)
-  local function tbl_has(l, s)
-    for _, v in pairs(l) do
-      if v == s then return true end
-    end
-    return false
-  end
-
-  local func_buffer = ""
-  local function ret_buf_add(key, value, _indentnt, idx)
-    if _indentnt == nil then func_buffer = func_buffer .. opts.spacing end
-    if key == nil then
-      func_buffer = func_buffer .. tostring(value)
-    elseif type(key) == "number" then
-      if idx == key then
-        func_buffer = func_buffer .. tostring(value)
-        return true
-      else
-        func_buffer = func_buffer .. "[" .. tostring(key) .. "] = " .. tostring(value)
-      end
-    else
-      local keywords = {
-        "and",
-        "break",
-        "do",
-        "else",
-        "end",
-        "false",
-        "for",
-        "function",
-        "if",
-        "in",
-        "local",
-        "nil",
-        "not",
-        "or",
-        "repeat",
-        "return",
-        "then",
-        "true",
-        "until",
-        "while",
-      }
-      if string.match(key, "[-+/%*%%{}%[%]^#~!@$~`&()]") or tbl_has(keywords, key) then
-        func_buffer = func_buffer .. '["' .. tostring(key) .. '"] = ' .. tostring(value)
-      else
-        func_buffer = func_buffer .. tostring(key) .. " = " .. tostring(value)
-      end
-    end
-    return false
-  end
-
-  if opts.__nested__ ~= true then func_buffer = "{\n" end
-  local index = 1
-  for k, v in pairs(tbl) do
-    if tbl_has(opts.ignore, k) then goto continue end
-    if type(v) == "table" then
-      if opts.recurse ~= nil and opts.recurse < 1 or main.is_empty(v) then
-        if ret_buf_add(k, "{},\n", nil, index) then index = index + 1 end
-        goto continue
-      end
-      if ret_buf_add(k, "{\n", nil, index) then index = index + 1 end
-      local rec_for_recursion = nil
-      if opts.recurse ~= nil then rec_for_recursion = opts.recurse - 1 end
-      ret_buf_add(
-        nil,
-        main.stringify(v, {
-          recurse = rec_for_recursion,
-          ignore = opts.ignore,
-          ignoreFns = opts.ignore_func,
-          indent = opts.indent + 1,
-          colored = opts.colored,
-          __nested__ = true,
-        }),
-        true,
-        index
-      )
-      ret_buf_add(nil, "},\n")
-    elseif type(v) == "function" then
-      if opts.ignore_func then goto continue end
-      if ret_buf_add(k, "function() end,\n", nil, index) then index = index + 1 end
-    elseif type(v) == "string" then
-      if ret_buf_add(k, '"' .. tostring(v) .. '",\n', nil, index) then index = index + 1 end
-    else
-      if ret_buf_add(k, tostring(v) .. ",\n", nil, index) then index = index + 1 end
-    end
-    ::continue::
-  end
-  if #opts.spacing == 2 then func_buffer = func_buffer .. "}" end
-  return func_buffer
-end
-
--- Copy some functions
-main.sort = table.sort
-
--- function main.pack(...) return { n = select("#", ...), ... } end
--- main.pack = table.pack
-
----Returns a new table with all arguments stored into keys `1`, `2`, etc.
---
----***Without*** the n field (use table.pack or just #table)
----@generic T
----@param ...T
----@return table
-function main.pack(...) return { ... } end
-
-main.remove = table.remove
-main.insert = table.insert
 
 return main

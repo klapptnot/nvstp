@@ -1,16 +1,13 @@
--- add your own custom mappings in
--- ~/.config/nvim/custom/mapping/init.lua
-
 local __map__ = require("config.data.mapping")
 
 ---@class NvimMappingConfig
 local main = {}
 
 ---Return a new instance of mapping table
----@param tbl? NvstpKeyMapp[]
+---@param tbl? NvstpKeyMap[]
 ---@return NvimMappingConfig
 function main:new(tbl)
-  ---@type NvstpKeyMapp[]
+  ---@type NvstpKeyMap[]
   self = tbl or __map__
   setmetatable(self, { __index = main })
   return self
@@ -21,23 +18,24 @@ end
 ---@return NvimMappingConfig
 function main:merge(tbl) return self:new(vim.tbl_deep_extend("force", self, tbl)) end
 
----Make all mappings on `mapps` non-op in the most common modes
----@param mapps string[]
+---Apply all `mapps` in the most common modes
+---@param mapps {[1]:string, [2]:string}[]
 ---@return NvimMappingConfig
-function main:no_op_key(mapps)
+function main:map(mapps)
   if mapps == nil then return self end
-  local opts = { noremap = false, silent = true }
+---@type vim.api.keyset.keymap
+  local opts = { noremap = true, silent = true,  }
   for _, mapp in ipairs(mapps) do
-    vim.keymap.set("n", mapp, "<NOP>", opts)
-    vim.keymap.set("v", mapp, "<NOP>", opts)
-    vim.keymap.set("i", mapp, "<NOP>", opts)
-    vim.keymap.set("t", mapp, "<NOP>", opts)
-    vim.keymap.set("x", mapp, "<NOP>", opts)
-    vim.keymap.set("s", mapp, "<NOP>", opts)
-    vim.keymap.set("o", mapp, "<NOP>", opts)
-    vim.keymap.set("c", mapp, "<NOP>", opts)
-    vim.keymap.set("!", mapp, "<NOP>", opts)
-    vim.keymap.set("l", mapp, "<NOP>", opts)
+    vim.api.nvim_set_keymap("n", mapp[1], mapp[2], opts)
+    vim.api.nvim_set_keymap("v", mapp[1], mapp[2], opts)
+    vim.api.nvim_set_keymap("i", mapp[1], mapp[2], opts)
+    vim.api.nvim_set_keymap("t", mapp[1], mapp[2], opts)
+    vim.api.nvim_set_keymap("x", mapp[1], mapp[2], opts)
+    vim.api.nvim_set_keymap("s", mapp[1], mapp[2], opts)
+    vim.api.nvim_set_keymap("o", mapp[1], mapp[2], opts)
+    vim.api.nvim_set_keymap("c", mapp[1], mapp[2], opts)
+    vim.api.nvim_set_keymap("!", mapp[1], mapp[2], opts)
+    vim.api.nvim_set_keymap("l", mapp[1], mapp[2], opts)
   end
   return self
 end
@@ -46,30 +44,29 @@ end
 ---@return NvimMappingConfig
 function main:disable_mouse()
   local mouse_events = {
-    "<LeftMouse>",
-    "<LeftDrag>",
-    "<LeftRelease>",
-    "<RightMouse>",
-    "<RightDrag>",
-    "<RightRelease>",
-    "<MiddleMouse>",
-    "<MiddleDrag>",
-    "<MiddleRelease>",
-    "<ScrollWheelUp>",
-    "<ScrollWheelDown>",
-    "<ScrollWheelLeft>",
-    "<ScrollWheelRight>",
+    { "<LeftMouse>",        "<nop>" },
+    { "<LeftDrag>",         "<nop>" },
+    { "<LeftRelease>",      "<nop>" },
+    { "<RightMouse>",       "<nop>" },
+    { "<RightDrag>",        "<nop>" },
+    { "<RightRelease>",     "<nop>" },
+    { "<MiddleMouse>",      "<nop>" },
+    { "<MiddleDrag>",       "<nop>" },
+    { "<MiddleRelease>",    "<nop>" },
+    { "<ScrollWheelUp>",    "<nop>" },
+    { "<ScrollWheelDown>",  "<nop>" },
+    { "<ScrollWheelLeft>",  "<nop>" },
+    { "<ScrollWheelRight>", "<nop>" },
   }
-  self:no_op_key(mouse_events)
+  self:map(mouse_events)
   return self
 end
 
 ---Add one keybinding to the table
----@param id string
----@param props table
+---@param props NvstpKeyMap
 ---@return NvimMappingConfig
-function main:add(id, props)
-  if self[id] == nil then self[id] = props end
+function main:add(props)
+  self[#self + 1] = props
   return self
 end
 
@@ -79,16 +76,18 @@ function main:apply()
   local fmt = string.format
 
   for _, props in pairs(self) do
-    ---@cast props NvstpKeyMapp
+    ---@cast props NvstpKeyMap
     if type(props.exec) == "function" then
+      ---@diagnostic disable-next-line: assign-type-mismatch
       props.opts.callback = props.exec
       props.exec = ""
     end
+    props.opts = props.opts or {}
     props.opts.desc = props.desc -- Just to not nest items
     for _, mode in ipairs(props.mode) do
-      local remove = rcall(vim.api.nvim_set_keymap, mode, props.mapp, props.exec, props.opts)
-      if not remove() then
-        print(fmt("Mapping error for '%s': %s", tostring(props.desc), remove.unwrap(true)))
+      local map_key = rcall(vim.api.nvim_set_keymap, mode, props.mapp, props.exec, props.opts)
+      if not map_key() then
+        print(fmt("Mapping error for '%s': %s", tostring(props.desc), map_key.unwrap(true)))
       end
     end
   end

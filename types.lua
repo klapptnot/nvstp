@@ -7,14 +7,20 @@
 
 -- Valid types for items in a list
 ---@alias DataType
----| "nil"
 ---| "number"
+---| "number?"
 ---| "string"
+---| "string?"
 ---| "boolean"
+---| "boolean?"
 ---| "table"
+---| "table?"
 ---| "function"
+---| "function?"
 ---| "thread"
+---| "thread?"
 ---| "userdata"
+---| "userdata?"
 ---|>"some" @ Any value but nil
 
 -- The error message format string
@@ -26,10 +32,12 @@
 -- List of expected values for argument
 ---@alias ArgExpValues any[]
 -- A argument scheme entry
----@alias ArgScheme DataType|{[1]:ArgValType, aev:ArgExpValues?, ave:ArgErrMsg?, ate:ArgErrMsg?, def:ArgDefVal?}
+---@alias ArgScheme DataType|{[1]:ArgValType, from:ArgExpValues?, type_err:ArgErrMsg?, value_err:ArgErrMsg?, def:ArgDefVal?}
 -- List item scheme
----@alias ItemScheme DataType|{[1]:ArgValType, aev:ArgExpValues?, ate:ArgErrMsg?, ave:ArgErrMsg?}
+---@alias ItemScheme DataType|{[1]:ArgValType, from:ArgExpValues?, type_err:ArgErrMsg?, value_err:ArgErrMsg?}
 -- List of argument schemes
----@alias ArgParseScheme {[AnyIndex]:ArgScheme, ate:ArgErrMsg?, ave:ArgErrMsg?, sep:string?}
+---@alias ArgParseScheme {[AnyIndex]:ArgScheme, type_err:ArgErrMsg?, value_err:ArgErrMsg?, sep:string?}
 -- List of item schemes
----@alias ListScheme {[AnyIndex]:ItemScheme, ate:ArgErrMsg?, ave:ArgErrMsg?, sep:string?}
+---@alias ListScheme {[AnyIndex]:ItemScheme, type_err:ArgErrMsg?, value_err:ArgErrMsg?, sep:string?}
+
+---@alias NvstpKeyMap {mapp:string, mode:string[], exec:fun()|string, desc:string?, opts:vim.api.keyset.keymap?}
