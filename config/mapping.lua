@@ -23,8 +23,8 @@ function main:merge(tbl) return self:new(vim.tbl_deep_extend("force", self, tbl)
 ---@return NvimMappingConfig
 function main:map(mapps)
   if mapps == nil then return self end
----@type vim.api.keyset.keymap
-  local opts = { noremap = true, silent = true,  }
+  ---@type vim.api.keyset.keymap
+  local opts = { noremap = true, silent = true }
   for _, mapp in ipairs(mapps) do
     vim.api.nvim_set_keymap("n", mapp[1], mapp[2], opts)
     vim.api.nvim_set_keymap("v", mapp[1], mapp[2], opts)
@@ -44,18 +44,18 @@ end
 ---@return NvimMappingConfig
 function main:disable_mouse()
   local mouse_events = {
-    { "<LeftMouse>",        "<nop>" },
-    { "<LeftDrag>",         "<nop>" },
-    { "<LeftRelease>",      "<nop>" },
-    { "<RightMouse>",       "<nop>" },
-    { "<RightDrag>",        "<nop>" },
-    { "<RightRelease>",     "<nop>" },
-    { "<MiddleMouse>",      "<nop>" },
-    { "<MiddleDrag>",       "<nop>" },
-    { "<MiddleRelease>",    "<nop>" },
-    { "<ScrollWheelUp>",    "<nop>" },
-    { "<ScrollWheelDown>",  "<nop>" },
-    { "<ScrollWheelLeft>",  "<nop>" },
+    { "<LeftMouse>", "<nop>" },
+    { "<LeftDrag>", "<nop>" },
+    { "<LeftRelease>", "<nop>" },
+    { "<RightMouse>", "<nop>" },
+    { "<RightDrag>", "<nop>" },
+    { "<RightRelease>", "<nop>" },
+    { "<MiddleMouse>", "<nop>" },
+    { "<MiddleDrag>", "<nop>" },
+    { "<MiddleRelease>", "<nop>" },
+    { "<ScrollWheelUp>", "<nop>" },
+    { "<ScrollWheelDown>", "<nop>" },
+    { "<ScrollWheelLeft>", "<nop>" },
     { "<ScrollWheelRight>", "<nop>" },
   }
   self:map(mouse_events)

@@ -106,7 +106,7 @@ return {
         fields = { "abbr", "kind", "menu" },
         format = function(entry, vim_item)
           -- load lspkind icons
-          vim_item.kind = kind_icons[vim_item.kind] .. " " ..  vim_item.kind
+          vim_item.kind = kind_icons[vim_item.kind] .. " " .. vim_item.kind
 
           --       |
           -- stylua: ignore

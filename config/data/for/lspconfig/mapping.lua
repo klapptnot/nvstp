@@ -165,9 +165,7 @@ return {
     meth = "textDocument/publishDiagnostics",
     mapp = "[d",
     mode = { "n" },
-    exec = function()
-      vim.diagnostic.jump({ count = -vim.v.count1, wrap = true })
-    end,
+    exec = function() vim.diagnostic.jump({ count = -vim.v.count1, wrap = true }) end,
     desc = "[LSP][S] Go to previous diagnostic",
     opts = __opts__,
   },
@@ -175,9 +173,7 @@ return {
     meth = "textDocument/publishDiagnostics",
     mapp = "]d",
     mode = { "n" },
-    exec = function()
-      vim.diagnostic.jump({ count = vim.v.count1, wrap = true })
-    end,
+    exec = function() vim.diagnostic.jump({ count = vim.v.count1, wrap = true }) end,
     desc = "[LSP][S] Go to next diagnostic",
     opts = __opts__,
   },

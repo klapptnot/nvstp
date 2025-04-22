@@ -216,9 +216,8 @@ end
 ---@return table<boolean>
 function main.boolean(tbl, recurse)
   ---@diagnostic disable-next-line: cast-local-type
-  tbl, recurse = table.unpack(
-    spr.parse_args({ "table", { "boolean?", def = false } }, { tbl, recurse })
-  )
+  tbl, recurse =
+    table.unpack(spr.parse_args({ "table", { "boolean?", def = false } }, { tbl, recurse }))
   ---@cast tbl table
   ---@cast recurse boolean?
   local recursive = (recurse ~= nil and recurse ~= false) or false
@@ -358,10 +357,7 @@ end
 ---@return T   ...
 ---@nodiscard
 function main.unpack(tbl, i, j, keys)
-  spr.validate(
-    { "table", "number?", "number?", "number?"},
-    { tbl, i, j, keys }
-  )
+  spr.validate({ "table", "number?", "number?", "number?" }, { tbl, i, j, keys })
   -- Manage negative numbers
   if i == nil then i = 1 end
   if j == nil then j = #tbl end

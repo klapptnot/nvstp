@@ -131,7 +131,7 @@ return {
   {
     mapp = "<C-Up>",
     mode = { "n" },
-    exec = function () api.scroll_markdown_float(-4) end,
+    exec = function() api.scroll_markdown_float(-4) end,
     desc = "Move line up",
     opts = _opts_lua,
   },
@@ -139,7 +139,7 @@ return {
   {
     mapp = "<C-Down>",
     mode = { "n" },
-    exec = function () api.scroll_markdown_float(4) end,
+    exec = function() api.scroll_markdown_float(4) end,
     desc = "Move line down",
     opts = _opts_lua,
   },

@@ -35,7 +35,7 @@ end
 ---@return boolean
 function main.ends_with(s, ending)
   spr.validate({ "string", "string" }, { s, ending })
-  return ending == "" or s:sub(- #ending) == ending
+  return ending == "" or s:sub(-#ending) == ending
 end
 
 ---Escape lua magic characters, making a pattern match themselves
@@ -208,9 +208,9 @@ function main.format(s, ...)
   end
 
   s = s:gsub("{{(.-)}}", "&!:%1::;")
-      :gsub("{(%d*:.?=?[=<^>]?%d*)}", replacement)
-      :gsub(patt, replacement)
-      :gsub("&!:(.-)::;", "{%1}")
+    :gsub("{(%d*:.?=?[=<^>]?%d*)}", replacement)
+    :gsub(patt, replacement)
+    :gsub("&!:(.-)::;", "{%1}")
   return s
 end
 

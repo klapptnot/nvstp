@@ -404,8 +404,8 @@ function main.save()
     )
     return
   elseif
-      vim.bo[vim.fn.bufnr("%")].buftype:find("term") ~= nil
-      and vim.bo[vim.fn.bufnr("%")].filetype == "terminal"
+    vim.bo[vim.fn.bufnr("%")].buftype:find("term") ~= nil
+    and vim.bo[vim.fn.bufnr("%")].filetype == "terminal"
   then
     vim.notify(
       "Buffer is a terminal: has no associated file, to save use v mode and run :'<,'>w <file_name>",
@@ -414,7 +414,7 @@ function main.save()
     )
     return
   end
-  vim.api.nvim_command("w!")         -- save
+  vim.api.nvim_command("w!") -- save
   vim.api.nvim_command("stopinsert") -- back to normal mode
   main.press_esc_key()
 end
@@ -473,10 +473,10 @@ function main.resize_win_interact()
   while true do
     local ok, ch = pcall(vim.fn.getchar) -- Will block exec until we got something
     if
-        not ok
-        or type(ch) ~= "number"
-        -- Upper or lower case h i j k l
-        or not ((ch > 71 and ch < 77) or (ch > 103 and ch < 109))
+      not ok
+      or type(ch) ~= "number"
+      -- Upper or lower case h i j k l
+      or not ((ch > 71 and ch < 77) or (ch > 103 and ch < 109))
     then
       vim.notify("Interactive window resizing done", vim.log.levels.INFO, {})
       break
@@ -647,7 +647,7 @@ function main.scroll_markdown_float(lines)
         vim.schedule(function()
           vim.api.nvim_buf_call(
             buf,
-            function() vim.api.pnvim_command("normal! " .. lines .. "zt") end
+            function() main.pnvim_command("normal! " .. lines .. "zt") end
           )
         end)
         return -- do it on the FIRST match and bounce
@@ -658,7 +658,7 @@ function main.scroll_markdown_float(lines)
   local info = vim.fn.getwininfo(vim.api.nvim_get_current_win())[1]
   local target = math.max(info.topline + lines, 1)
 
-  vim.api.pnvim_command("normal! " .. target .. "zt")
+  main.pnvim_command("normal! " .. target .. "zt")
 end
 
 -- Function to get the appropriate indent string (spaces or tabs)
@@ -687,7 +687,7 @@ function main.add_indent()
   else
     -- If in visual mode, operate on the selected range
     main.press_esc_key(vim.fn.mode()) -- Back to normal mode
-    vim.schedule(function()           -- Run later to read marks
+    vim.schedule(function() -- Run later to read marks
       local line_start = vim.api.nvim_buf_get_mark(0, "<")[1]
       local line_end = vim.api.nvim_buf_get_mark(0, ">")[1]
       if line_start == line_end then line_start = line_start - 1 end
@@ -717,7 +717,7 @@ function main.remove_indent()
   else
     -- If in visual mode, operate on the selected range
     main.press_esc_key(vim.fn.mode()) -- Back to normal mode
-    vim.schedule(function()           -- Run later to read marks
+    vim.schedule(function() -- Run later to read marks
       local line_start = vim.api.nvim_buf_get_mark(0, "<")[1]
       local line_end = vim.api.nvim_buf_get_mark(0, ">")[1]
       if line_start == line_end then line_start = line_start - 1 end
@@ -783,10 +783,10 @@ function main.selection_wrapper(pair)
       vim.api.nvim_buf_set_lines(cur_buf, line_end - 1, line_end, false, { ln_end })
     else -- One line
       local ln = lines[1]:sub(1, col_start - 1)
-          .. pair[1]
-          .. lines[1]:sub(col_start, col_end)
-          .. pair[2]
-          .. lines[1]:sub(col_end + 1)
+        .. pair[1]
+        .. lines[1]:sub(col_start, col_end)
+        .. pair[2]
+        .. lines[1]:sub(col_end + 1)
       vim.api.nvim_buf_set_lines(cur_buf, line_start - 1, line_start, false, { ln })
     end
   end)

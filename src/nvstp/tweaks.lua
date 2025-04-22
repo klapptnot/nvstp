@@ -12,13 +12,7 @@ main.tweaks = {
 
       if a == width then return end
       vim.notify(
-        string.format(
-          "Indentation size changed, from %d:%d:%d to %d",
-          a,
-          b,
-          c,
-          width
-        ),
+        string.format("Indentation size changed, from %d:%d:%d to %d", a, b, c, width),
         vim.log.levels.INFO,
         { title = "Tweaks" }
       )

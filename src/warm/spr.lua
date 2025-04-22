@@ -253,7 +253,8 @@ function main.validate(t, args)
   end
 
   local concat_sep = str_fallback(t.sep, ", ")
-  local type_err_msg = str_fallback(t.type_err, "bad argument #%d (expected one of [%s], got [%s])")
+  local type_err_msg =
+    str_fallback(t.type_err, "bad argument #%d (expected one of [%s], got [%s])")
   local value_err_msg =
     str_fallback(t.value_err, "bad argument #%d (expected value from [%s], got [%s]")
 
@@ -279,9 +280,7 @@ function main.validate(t, args)
       end
       if arg_type == "nil" then
         if expected_type == "some" then break end
-        if try_nil then
-          type_err = false
-        end
+        if try_nil then type_err = false end
       end
       if arg_type == expected_type or expected_type == "some" then
         type_err = false
