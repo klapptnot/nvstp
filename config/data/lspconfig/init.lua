@@ -2,7 +2,7 @@ local fns_capabilities =
   vim.lsp.protocol.resolve_capabilities(vim.lsp.protocol.make_client_capabilities())
 
 local fns_on_attach = function(client, bufnr)
-  local mapps = require("config.data.for.lspconfig.mapping")
+  local mapps = require("config.data.lspconfig.mapping")
 
   for _, prop in ipairs(mapps) do
     if client:supports_method(prop.meth) then
@@ -72,7 +72,7 @@ return {
       on_attach = fns_on_attach,
       capabilities = fns_capabilities,
       settings = {
-        schemas = require("config.data.for.lspconfig.jsonsch"),
+        schemas = require("config.data.lspconfig.jsonsch"),
       },
     })
   end,

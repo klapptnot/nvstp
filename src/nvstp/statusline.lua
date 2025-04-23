@@ -214,6 +214,7 @@ end
 
 function main.set(opts, enable)
   main = vim.tbl_deep_extend("force", main, opts)
+  vim.api.nvim_set_hl(0, "StatusLineNC", main.colors.inactive)
   StatusLineGenerate = main.run
 
   main.__enabled = not enable

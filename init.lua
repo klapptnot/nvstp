@@ -106,6 +106,7 @@ require("src.nvstp.statusline").set({
       removed = { bg = "#f38ba8", fg = "#11111b" }, -- Red
     },
     cursor_pos = { bg = "#cdd6f4", fg = "#11111b" }, -- Text
+    inactive = { bg = "#1e1e2e", fg = "#cdd6f4" },
   },
   separators = {
     l = "",

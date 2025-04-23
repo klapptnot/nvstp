@@ -20,32 +20,78 @@ local function resize_float(display, new_height)
   vim.api.nvim_win_set_config(display.win, cfg)
 end
 
-local function keymap_len_backward(s)
-  local len = #s
-  if len == 0 then return 1 end
+local function create_scratch_buf(opts)
+  local buf = vim.api.nvim_create_buf(false, true)
+  vim.api.nvim_clear_autocmds({ buffer = buf })
 
-  -- if last char is not ">", return 1
-  if s:sub(len, len) ~= ">" then return 1 end
+  for opt, val in pairs(opts) do
+    vim.api.nvim_set_option_value(opt, val, { buf = buf })
+  end
 
-  -- if last char is ">", search backwards for "<"
-  for i = len, 1, -1 do
-    if s:sub(i, i) == "<" then
-      return len - i + 1 -- include the "<"
+  return buf
+end
+
+local function token_backward(winid, delete)
+  local row, col = table.unpack(vim.api.nvim_win_get_cursor(winid))
+  local line =
+    vim.api.nvim_buf_get_lines(vim.api.nvim_win_get_buf(winid), row - 1, row, false)[1]
+  local prefix = line:sub(1, col)
+
+  local len = 1
+  if prefix:sub(-1) == ">" then
+    for i = #prefix, 1, -1 do
+      if prefix:sub(i, i) == "<" then
+        len = #prefix - i + 1
+        break
+      end
     end
   end
 
-  return 1 -- fallback if no "<" is found
+  local start_col = math.max(0, col - len)
+  if delete then
+    local new_line = line:sub(1, start_col) .. line:sub(col + 1)
+    vim.api.nvim_buf_set_lines(
+      vim.api.nvim_win_get_buf(winid),
+      row - 1,
+      row,
+      false,
+      { new_line }
+    )
+  end
+
+  vim.api.nvim_win_set_cursor(winid, { row, start_col })
 end
 
-local function delete_from_cursor_back(len)
-  local row, col = table.unpack(vim.api.nvim_win_get_cursor(0))
-  local line = vim.api.nvim_get_current_line()
+local function token_forward(winid, delete)
+  local row, col = table.unpack(vim.api.nvim_win_get_cursor(winid))
+  local line =
+    vim.api.nvim_buf_get_lines(vim.api.nvim_win_get_buf(winid), row - 1, row, false)[1]
+  local suffix = line:sub(col + 1)
 
-  local start_col = math.max(0, col - len)
-  local new_line = line:sub(1, start_col) .. line:sub(col + 1)
+  local len = 1
+  if suffix:sub(1, 1) == "<" then
+    for i = 1, #suffix do
+      if suffix:sub(i, i) == ">" then
+        len = i
+        break
+      end
+    end
+  end
 
-  vim.api.nvim_set_current_line(new_line)
-  vim.api.nvim_win_set_cursor(0, { row, start_col })
+  if delete then
+    local end_col = math.min(#line, col + len)
+    local new_line = line:sub(1, col) .. line:sub(end_col + 1)
+    vim.api.nvim_buf_set_lines(
+      vim.api.nvim_win_get_buf(winid),
+      row - 1,
+      row,
+      false,
+      { new_line }
+    )
+    return
+  end
+
+  vim.api.nvim_win_set_cursor(winid, { row, col + len })
 end
 
 local function make_results(mapps, pref)
@@ -61,7 +107,7 @@ local function make_results(mapps, pref)
   return lines, res
 end
 
-function main.get_mapps()
+local function get_mapps()
   local bmaps = vim.api.nvim_buf_get_keymap(0, "n")
   local gmaps = vim.api.nvim_get_keymap("n")
 
@@ -82,13 +128,20 @@ function main.get_mapps()
 end
 
 function main.whichkey()
-  local mapps = main.get_mapps()
+  local mapps = get_mapps()
   if tbl.is_empty(mapps) then return end
   local em_fmt = "{}/" .. #tbl.get_keys(mapps)
 
-  main.open()
+  main.open({ title = " Whichkey " })
 
   local function on_select_keymap(mapp, state)
+    if mapp == nil then
+      vim.notify(
+        "Somehow mapping is nil, lol",
+        vim.log.levels.ERROR,
+        { title = "[N] Whichkey" }
+      )
+    end
     local s = {
       win = vim.api.nvim_get_current_win(),
       buf = vim.api.nvim_get_current_buf(),
@@ -102,9 +155,13 @@ function main.whichkey()
         mapp.callback()
       end
     else
+      local rhs = mapp.rhs
+      if mapp.expr == 1 then rhs = vim.api.nvim_eval(rhs) end
+      if count ~= 1 then rhs = tostring(count) .. rhs end
+
       vim.api.nvim_feedkeys(
-        vim.api.nvim_replace_termcodes(tostring(count) .. mapp.rhs, true, false, true),
-        mapps.noremap == 0 and "n" or "m",
+        vim.api.nvim_replace_termcodes(rhs, true, false, true),
+        mapp.noremap == 0 and "n" or "m",
         false
       )
     end
@@ -152,11 +209,6 @@ function main.whichkey()
   vim.api.nvim_buf_set_lines(main.props.input.buf, 0, -1, true, { placeholder })
   vim.api.nvim_win_set_cursor(main.props.input.win, { 1, #placeholder })
 
-  vim.api.nvim_create_autocmd({ "TextChanged", "TextChangedI" }, {
-    buffer = main.props.input.buf,
-    callback = handle_updates,
-  })
-
   local hi = "NvstpPalleteTags"
   vim.api.nvim_win_call(main.props.display.win, function()
     vim.api.nvim_set_hl(0, hi, { fg = "#fdc5c5" })
@@ -164,50 +216,72 @@ function main.whichkey()
   end)
 
   local function on_key_handler(key, typed)
+    -- or (typed:sub(1, 1) == "\r" and #typed == 2)
+    if typed:sub(2) == key then typed = typed:sub(2) end
     local key_repr = vim.fn.keytrans(typed)
 
-    if
-      key_repr == "<BS>"
-      or key_repr == "<Left>"
-      or key_repr == "<Right>"
-      or key_repr == "<C-Left>"
-      or key_repr == "<C-Right>"
-      or key_repr == "<lt>"
-      or key_repr == "<gt>"
-      or key_repr == "<Home>"
-      or key_repr == "<kHome>"
-      or key_repr == "<End>"
-      or key_repr == "<kEnd>"
-    then
+    local functional_keys = {
+      -- these keys should trigger handle_updates
+      ["<BS>"] = true,
+      ["<lt>"] = true,
+      ["<gt>"] = true,
+      -- these keys are ignored
+      ["<Left>"] = false,
+      ["<Right>"] = false,
+      ["<Home>"] = false,
+      ["<kHome>"] = false,
+      ["<End>"] = false,
+      ["<kEnd>"] = false,
+      ["<ScrollWheelUp>"] = false,
+      ["<ScrollWheelDown>"] = false,
+      ["<ScrollWheelLeft>"] = false,
+      ["<ScrollWheelRight>"] = false,
+    }
+
+    if functional_keys[key_repr] == true then
+      -- schedule to run after that key made a change
+      vim.schedule(handle_updates)
       return
     end
+    if functional_keys[key_repr] == false then return end
 
     if key_repr == "<Esc>" or key_repr == "<CR>" then
       main.close()
-      return
+      return "" -- nvim ignores this key when empty string is returned
     elseif key_repr == "<C-Esc>" then
       vim.api.nvim_buf_set_lines(main.props.input.buf, 0, -1, false, {})
     elseif key_repr == "<C-BS>" then
-      local _, col = table.unpack(vim.api.nvim_win_get_cursor(0))
-      local line = vim.api.nvim_get_current_line()
-      local tail_len = math.max(keymap_len_backward(line:sub(1, col)), 1)
-      delete_from_cursor_back(tail_len - 1)
-    elseif key ~= key_repr then -- means it is not getting inserted
+      token_backward(main.props.input.win, true)
+    elseif key_repr == "<C-Del>" then
+      token_forward(main.props.input.win, true)
+    elseif key_repr == "<C-Left>" then
+      token_backward(main.props.input.win, false)
+    elseif key_repr == "<C-Right>" then
+      token_forward(main.props.input.win, false)
+    else -- keys could be inserted for insert mode, return ""
       local row, col = table.unpack(vim.api.nvim_win_get_cursor(main.props.input.win))
       local line = vim.api.nvim_buf_get_lines(main.props.input.buf, row - 1, row, false)[1]
 
       local new_line = line:sub(1, col) .. key_repr .. line:sub(col + 1)
       vim.api.nvim_buf_set_lines(main.props.input.buf, row - 1, row, false, { new_line })
       vim.api.nvim_win_set_cursor(main.props.input.win, { row, col + #key_repr })
-
-      vim.schedule(function() delete_from_cursor_back(#typed) end)
     end
+    handle_updates()
+    return "" -- nvim ignores...
   end
-  vim.on_key(on_key_handler, main.ns, {})
+
+  -- schedule to prevent autocmd feedkeys????
+  vim.schedule(function()
+    vim.on_key(on_key_handler, main.ns, {})
+    handle_updates()
+  end)
 end
 
 -- Open display + input window
-function main.open()
+function main.open(opts)
+  opts = {
+    title = opts.title or " Select ",
+  }
   local ui = vim.api.nvim_list_uis()[1]
   if not ui then return end
 
@@ -226,12 +300,16 @@ function main.open()
   local col = 0
 
   -- === Display Window ===
-  local display_buf = vim.api.nvim_create_buf(false, true)
-  vim.api.nvim_set_option_value("modifiable", false, { buf = display_buf })
+  local display_buf = create_scratch_buf({
+    modifiable = false,
+    swapfile = false,
+    bufhidden = "wipe",
+    buftype = "nofile",
+  })
 
   local display_win = vim.api.nvim_open_win(display_buf, false, {
     relative = "editor",
-    title = " Select ",
+    title = opts.title,
     title_pos = "center",
     width = width,
     height = display_height,
@@ -242,16 +320,15 @@ function main.open()
   })
 
   -- === Input Window ===
-  local input_buf = vim.api.nvim_create_buf(false, true)
-  vim.api.nvim_set_option_value("buflisted", false, { buf = input_buf })
-  vim.api.nvim_set_option_value("swapfile", false, { buf = input_buf })
-  vim.api.nvim_set_option_value("bufhidden", "wipe", { buf = input_buf })
-  vim.api.nvim_set_option_value("buftype", "nofile", { buf = input_buf })
-
-  vim.bo[input_buf].omnifunc = ""
-  vim.bo[input_buf].completefunc = ""
-  vim.bo[input_buf].tagfunc = ""
-  vim.bo[input_buf].formatexpr = ""
+  local input_buf = create_scratch_buf({
+    swapfile = false,
+    bufhidden = "wipe",
+    buftype = "nofile",
+    omnifunc = "",
+    completefunc = "",
+    tagfunc = "",
+    formatexpr = "",
+  })
 
   do
     local ok, cmp = pcall(require, "cmp.config")

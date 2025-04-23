@@ -2,6 +2,8 @@ local main = {}
 local str = require("src.warm.str")
 local match = require("src.warm.spr").match
 
+main.whichkey = require("src.nvstp.palette").whichkey
+
 ---Returns whether the current mode is visual mode or not
 ---@return boolean
 function main.is_visual_mode()
@@ -345,18 +347,21 @@ function main.simple_input_popup(opts)
     style = "minimal",
     border = "rounded",
   })
-  vim.cmd("normal A")
-  vim.cmd("startinsert")
 
-  vim.keymap.set({ "i", "n" }, "<Esc>", "<cmd>q<CR>", { buffer = buf_id })
-
-  vim.keymap.set({ "i", "n" }, "<CR>", function()
+  local function on_confirm()
     local buf_text = vim.trim(vim.fn.getline("."))
+    vim.api.nvim_command("stopinsert")
     vim.api.nvim_win_close(fwin, true)
-    vim.cmd.stopinsert()
     vim.api.nvim_buf_delete(buf_id, { force = true })
     opts.callback(buf_text)
-  end, { buffer = buf_id })
+  end
+
+  vim.api.nvim_buf_call(buf_id, function() vim.api.nvim_command("startinsert") end)
+
+  vim.api.nvim_buf_set_keymap(buf_id, "n", "<Esc>", "<cmd>q<CR>", {})
+  vim.api.nvim_buf_set_keymap(buf_id, "i", "<Esc>", "<cmd>q<CR>", {})
+  vim.api.nvim_buf_set_keymap(buf_id, "n", "<CR>", "", { callback = on_confirm, expr = false })
+  vim.api.nvim_buf_set_keymap(buf_id, "i", "<CR>", "", { callback = on_confirm, expr = false })
 end
 
 ---`vim.api.nvim_command` wrapper to just print errors as they where called in command-line
@@ -441,17 +446,20 @@ function main.comment()
   local ref_position = nil
 
   if main.is_visual_mode() then
-    local _, start_line, _, _ = table.unpack(vim.fn.getpos("'<"))
-    local _, end_line, _, _ = table.unpack(vim.fn.getpos("'>"))
-
-    line_start = math.min(start_line, end_line)
-    line_end = math.max(start_line, end_line)
     main.press_esc_key()
+    vim.schedule(function()
+      local _, start_line, _, _ = table.unpack(vim.fn.getpos("'<"))
+      local _, end_line, _, _ = table.unpack(vim.fn.getpos("'>"))
+
+      line_start = math.min(start_line, end_line)
+      line_end = math.max(start_line, end_line)
+      require("vim._comment").toggle_lines(line_start, line_end, ref_position)
+    end)
   else
     line_start = vim.fn.line(".")
     line_end = line_start
+    require("vim._comment").toggle_lines(line_start, line_end, ref_position)
   end
-  require("vim._comment").toggle_lines(line_start, line_end, ref_position)
 end
 
 function main.move_line_up()
