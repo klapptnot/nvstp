@@ -6,17 +6,18 @@ local tbl = require("src.warm.table")
 
 ---@class NWhichKey
 local main = {
+  ---@type NWhichKeyOpts
   opts = {
     prefill = " ",
     ignore = {
       "whichkey.ignored",
     },
     hl = {
-      Prefix = { fg = "#cba0ff" },
+      Prefix = { fg = "#fff3d7" },
       Fuzzy = { fg = "#ffbaf1" },
       Char = { fg = "#a0eaff" },
       Tags = { fg = "#a4f4a6" },
-      Match = { fg = "#ffffff", bg = "#11111b" },
+      Match = { fg = "#f0d0ff", bg = "#47374b" },
       Stats = { fg = "#5adf9d" },
     },
     title = "Whichkey",
@@ -26,7 +27,7 @@ local main = {
 local function token_backward(winid, delete)
   local row, col = table.unpack(vim.api.nvim_win_get_cursor(winid))
   local line =
-      vim.api.nvim_buf_get_lines(vim.api.nvim_win_get_buf(winid), row - 1, row, false)[1]
+    vim.api.nvim_buf_get_lines(vim.api.nvim_win_get_buf(winid), row - 1, row, false)[1]
   local prefix = line:sub(1, col)
 
   local len = 1
@@ -57,7 +58,7 @@ end
 local function token_forward(winid, delete)
   local row, col = table.unpack(vim.api.nvim_win_get_cursor(winid))
   local line =
-      vim.api.nvim_buf_get_lines(vim.api.nvim_win_get_buf(winid), row - 1, row, false)[1]
+    vim.api.nvim_buf_get_lines(vim.api.nvim_win_get_buf(winid), row - 1, row, false)[1]
   local suffix = line:sub(col + 1)
 
   local len = 1
@@ -93,11 +94,11 @@ local function make_results_pref(mapps, pref, width)
   for n, v in pairs(mapps) do
     if str.starts_with(n, pref) then
       lines[#lines + 1] =
-          str.format(fmt, v.mode .. (v.buffer == 1 and "-" or "+"), n:sub(#pref + 1), v.desc)
+        str.format(fmt, v.mode .. (v.buffer == 1 and "-" or "+"), n:sub(#pref + 1), v.desc)
       keys[#keys + 1] = n
     end
   end
-  return lines, keys
+  return lines, keys, "(:?| )[.]"
 end
 
 local function make_results_fuzz(mapps, fuzz, width)
@@ -110,7 +111,7 @@ local function make_results_fuzz(mapps, fuzz, width)
       keys[#keys + 1] = n
     end
   end
-  return lines, keys
+  return lines, keys, "[" .. fuzz .. "]"
 end
 
 local function get_mapps()
@@ -135,21 +136,21 @@ local function get_mapps()
   return res
 end
 
-local function fuzz_update_selection(key_repr, buf, cur, max, ns)
+local function update_selection(key_repr, buf, cur, max, ns)
   max = max - 1
+  local new_sel = nil
   if key_repr == "<Up>" then
-    local new_sel = math.max(math.min(cur - 1, max), 0)
-    vim.api.nvim_buf_clear_namespace(buf, ns, 0, -1)
-    vim.api.nvim_buf_add_highlight(buf, ns, "NWhichKeyMatch", new_sel, 0, -1)
-    return new_sel
+    new_sel = math.max(math.min(cur - 1, max), 0)
+    if cur == new_sel then new_sel = max end -- min -> wrap
   elseif key_repr == "<Down>" then
-    local new_sel = math.min(math.max(cur + 1, 0), max)
-    vim.api.nvim_buf_clear_namespace(buf, ns, 0, -1)
-    vim.api.nvim_buf_add_highlight(buf, ns, "NWhichKeyMatch", new_sel, 0, -1)
-    return new_sel
+    new_sel = math.min(math.max(cur + 1, 0), max)
+    if cur == new_sel then new_sel = 0 end -- max -> wrap
   else
     return nil
   end
+  vim.api.nvim_buf_clear_namespace(buf, ns, 0, -1)
+  vim.api.nvim_buf_add_highlight(buf, ns, "NWhichKeyMatch", new_sel, 0, -1)
+  return new_sel
 end
 
 local function whichkey()
@@ -174,23 +175,37 @@ local function whichkey()
   local make_results = make_results_pref
 
   local fuzzy = false
-  local fuzzy_sel = -0
+  local selected = -1
   local em_id = nil
+  local mm_id = nil
 
   local function set_window_style(hl)
-    vim.api.nvim_win_set_option(props.display.win, "winhighlight", "FloatBorder:" .. hl)
-    vim.api.nvim_win_set_option(props.input.win, "winhighlight", "FloatBorder:" .. hl)
+    vim.api.nvim_set_option_value(
+      "winhighlight",
+      "FloatBorder:" .. hl,
+      { win = props.display.win }
+    )
+    vim.api.nvim_set_option_value(
+      "winhighlight",
+      "FloatBorder:" .. hl,
+      { win = props.input.win }
+    )
   end
 
   local function check_match(lines, keys, run)
     if fuzzy then
       if not run then return false, nil end
       if #keys == 0 then return nil, nil end
-      fuzzy_sel = fuzzy_sel + 1 -- 1 based
-      return true, mapps[keys[fuzzy_sel]]
+      selected = selected + 1 -- 1 based
+      return true, mapps[keys[selected]]
     else
-      if #lines ~= 1 then return false, nil end
-      return true, mapps[keys[1]]
+      if #lines > 0 then
+        -- Run top match
+        if run then return true, mapps[keys[1]] end
+        -- If len is 0, user typed the whole mapping
+        if #str.split(lines[1], " ")[3] == 0 then return true, mapps[keys[1]] end
+      end
+      return false, nil
     end
   end
 
@@ -225,7 +240,7 @@ local function whichkey()
 
   local function handle_updates(run)
     local line = vim.api.nvim_buf_get_lines(props.input.buf, 0, 1, false)[1]
-    local lines, keys = make_results(mapps, str.strip(line), props.width)
+    local lines, keys, match = make_results(mapps, str.strip(line), props.width)
     local found, mapp = check_match(lines, keys, run)
     if found == nil then
       close_whichkey()
@@ -238,10 +253,10 @@ local function whichkey()
       return true
     end
 
-    vim.api.nvim_win_call(
-      props.display.win,
-      function() vim.fn.matchadd("NWhichKeyChar", "[➜|]") end
-    )
+    vim.api.nvim_win_call(props.display.win, function()
+      if mm_id ~= nil then vim.fn.matchdelete(mm_id) end
+      mm_id = vim.fn.matchadd("NWhichKeyMatch", match)
+    end)
 
     if #lines > 0 then core.resizeh(props.display, #lines) end
 
@@ -285,15 +300,10 @@ local function whichkey()
         return ""
       end
       ---@diagnostic disable-next-line: cast-local-type
-      fuzzy_sel = fuzz_update_selection(
-        key_repr,
-        props.display.buf,
-        fuzzy_sel,
-        props.display.cur_h,
-        fuzzs_ns
-      )
-      if fuzzy_sel ~= nil then return "" end
-      fuzzy_sel = 0
+      selected =
+        update_selection(key_repr, props.display.buf, selected, props.display.cur_h, fuzzs_ns)
+      if selected ~= nil then return "" end
+      selected = -1
       vim.schedule(handle_updates)
       return
     end
@@ -323,9 +333,12 @@ local function whichkey()
     end
     if functional_keys[key_repr] == false then return end
 
-    if key_repr == "<Esc>" or key_repr == "<CR>" then
+    if key_repr == "<Esc>" then
       close_whichkey()
       return "" -- nvim ignores this key when empty string is returned
+    elseif key_repr == "<CR>" then
+      handle_updates(true)
+      return ""
     elseif key_repr == "<C-Esc>" then
       local line = vim.api.nvim_buf_get_lines(props.input.buf, 0, 1, false)[1]
       if line == "" then
@@ -363,10 +376,10 @@ local function whichkey()
 
   set_window_style("NWhichKeyPrefix")
 
-  vim.api.nvim_win_call(
-    props.display.win,
-    function() vim.fn.matchadd("NWhichKeyTags", "\\[[^\\]]*\\]") end
-  )
+  vim.api.nvim_win_call(props.display.win, function()
+    vim.fn.matchadd("NWhichKeyTags", "\\[[^\\]]*\\]")
+    vim.fn.matchadd("NWhichKeyChar", "[➜|]")
+  end)
 
   em_id = vim.api.nvim_buf_set_extmark(props.input.buf, ns, 0, 0, {
     virt_text = { { "", "NWhichKeyStats" } },

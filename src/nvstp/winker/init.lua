@@ -189,6 +189,7 @@ function main.jump()
     return
   end
   if res.data == nil then
+    if res.char == 27 then return end -- <Esc>
     vim.notify(
       "Window with mark: '" .. vim.fn.nr2char(res.char) .. "' does not exist",
       vim.log.levels.ERROR,

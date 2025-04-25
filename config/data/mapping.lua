@@ -1,9 +1,9 @@
 local api = require("src.nvstp.api")
 
 ---@type vim.api.keyset.keymap
-local _opts_lua = { expr = false, noremap = true }
+local _opts_lua = { expr = false, noremap = false }
 ---@type vim.api.keyset.keymap
-local _opts_any = { silent = true }
+local _opts_map = { expr = false, silent = true }
 
 ---@type NvstpKeyMap[]
 return {
@@ -89,22 +89,6 @@ return {
   },
 
   {
-    mapp = "<leader>sv",
-    mode = { "n" },
-    exec = vim.cmd.vsplit,
-    desc = "Split current window vertically",
-    opts = _opts_lua,
-  },
-
-  {
-    mapp = "<leader>sh",
-    mode = { "n" },
-    exec = vim.cmd.split,
-    desc = "Split current window horizontally",
-    opts = _opts_lua,
-  },
-
-  {
     mapp = "<leader>fr",
     mode = { "v", "n" },
     exec = api.find_and_open_refs,
@@ -132,7 +116,7 @@ return {
     mapp = "<C-Up>",
     mode = { "n" },
     exec = function() api.scroll_markdown_float(-4) end,
-    desc = "Move line up",
+    desc = "Scroll up (?Hover/Main)",
     opts = _opts_lua,
   },
 
@@ -140,7 +124,7 @@ return {
     mapp = "<C-Down>",
     mode = { "n" },
     exec = function() api.scroll_markdown_float(4) end,
-    desc = "Move line down",
+    desc = "Scroll down (?Hover/Main)",
     opts = _opts_lua,
   },
 
@@ -262,7 +246,7 @@ return {
     mode = { "i" },
     exec = "<C-w>",
     desc = "Delete word backwards",
-    opts = _opts_any,
+    opts = _opts_map,
   },
 
   {
@@ -270,7 +254,7 @@ return {
     mode = { "n" },
     exec = "<Cmd>SymbolsOutline<CR>",
     desc = "Toggle Symbols Outline window",
-    opts = _opts_any,
+    opts = _opts_map,
   },
 
   {
@@ -278,7 +262,7 @@ return {
     mode = { "n" },
     exec = "<Cmd>Telescope find_files<CR>",
     desc = "Telescope: Find files",
-    opts = _opts_any,
+    opts = _opts_map,
   },
 
   {
@@ -286,7 +270,7 @@ return {
     mode = { "n" },
     exec = "<Cmd>Telescope find_files follow=true hidden=true<CR>",
     desc = "Telescope: Find all",
-    opts = _opts_any,
+    opts = _opts_map,
   },
 
   {
@@ -294,7 +278,7 @@ return {
     mode = { "n" },
     exec = "<Cmd>Telescope live_grep<CR>",
     desc = "Telescope: Live grep",
-    opts = _opts_any,
+    opts = _opts_map,
   },
 
   {
@@ -302,7 +286,7 @@ return {
     mode = { "n" },
     exec = "<Cmd>Telescope buffers<CR>",
     desc = "Telescope: Find buffers",
-    opts = _opts_any,
+    opts = _opts_map,
   },
 
   {
@@ -310,7 +294,7 @@ return {
     mode = { "n" },
     exec = "<Cmd>Telescope buffers<CR>",
     desc = "Telescope: Find buffers",
-    opts = _opts_any,
+    opts = _opts_map,
   },
 
   {
@@ -318,7 +302,7 @@ return {
     mode = { "n" },
     exec = "<Cmd>Telescope help_tags<CR>",
     desc = "Telescope: Help pages",
-    opts = _opts_any,
+    opts = _opts_map,
   },
 
   {
@@ -326,15 +310,15 @@ return {
     mode = { "n" },
     exec = "<Cmd>Telescope oldfiles<CR>",
     desc = "Telescope: Find oldfiles",
-    opts = _opts_any,
+    opts = _opts_map,
   },
 
   {
     mapp = "<leader>fz",
     mode = { "n" },
     exec = "<Cmd>Telescope current_buffer_fuzzy_find<CR>",
-    desc = "Telescope: Find in current buffer",
-    opts = _opts_any,
+    desc = "Telescope: Find in current buffer (fuzzy)",
+    opts = _opts_map,
   },
 
   {
@@ -342,7 +326,7 @@ return {
     mode = { "n" },
     exec = "<Cmd>Telescope git_commits<CR>",
     desc = "Telescope: Git commits",
-    opts = _opts_any,
+    opts = _opts_map,
   },
 
   {
@@ -350,7 +334,7 @@ return {
     mode = { "n" },
     exec = "<Cmd>Telescope git_status<CR>",
     desc = "Telescope: Git status",
-    opts = _opts_any,
+    opts = _opts_map,
   },
 
   {
@@ -358,7 +342,7 @@ return {
     mode = { "n", "i" },
     exec = "<Cmd>Man<CR>",
     desc = "Open man page for symbol under cursor",
-    opts = _opts_any,
+    opts = _opts_map,
   },
   -- do not save replaced selection
   {
@@ -366,7 +350,7 @@ return {
     mode = { "x" },
     exec = '"_dp',
     desc = "Paste",
-    opts = _opts_any,
+    opts = _opts_map,
   },
   -- Use gj|jk if no v:count
   -- https://www.reddit.com/r/vim/comments/2k4cbr/problem_with_gj_and_gk

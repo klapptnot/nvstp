@@ -1,6 +1,6 @@
 -- config loader
 
----@alias NvstpConfig {globals:NvimGlobalsConfig; mapping:NvimMappingConfig; options:NvimOptionsConfig; plugins:NvimPluginsConfig}
+---@alias NvstpConfig {mapping:NvimMappingConfig; options:NvimOptionsConfig; plugins:NvimPluginsConfig}
 
 ---@type NvstpConfig
 local main = {

@@ -27,7 +27,7 @@ do -- bootstrap
   end
 
   vim.opt.rtp:prepend(lazypath)
-  vim.cmd("silent! helptags " .. vim.fn.stdpath("config") .. "/doc")
+  vim.cmd("silent! helptags " .. vim.fs.joinpath(nvcfg, "docs"))
 end
 
 NVSTP = {
@@ -44,7 +44,6 @@ if not vim.uv.fs_stat(NVSTP.cache_path) then vim.fn.mkdir(NVSTP.cache_path, "p")
 
 -- Space is <leader> key
 vim.g.mapleader = " "
-
 
 ---@type NvstpConfig
 local config = require("config")

@@ -154,7 +154,9 @@ function main.run()
   if string.has(main.ignore, env.bfft) then
     return vim_modes[env.mode][1] .. " in " .. env.bfft .. "%<%=%c:%l/%L [%b][0x%B]"
   elseif vim.api.nvim_get_current_win() ~= vim.g.statusline_winid then
-    return "  INACTIVE" .. (#env.bfft > 0 and (" in " .. env.bfft) or "").. "%<%=%c:%l/%L [%b][0x%B]"
+    return "  INACTIVE"
+      .. (#env.bfft > 0 and (" in " .. env.bfft) or "")
+      .. "%<%=%c:%l/%L [%b][0x%B]"
   end
 
   env.name = vim.fn.bufname(env.sbuf)

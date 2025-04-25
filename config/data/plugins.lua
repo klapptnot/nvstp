@@ -2,7 +2,6 @@ return {
   -- required dependencies
   --#region
   { "nvim-tree/nvim-web-devicons", lazy = true },
-  { "nvim-lua/plenary.nvim", lazy = true },
   { "nvim-telescope/telescope.nvim", tag = "0.1.5" },
   --#endregion
 
@@ -11,13 +10,14 @@ return {
   { "stevearc/dressing.nvim" },
 
   require("config.data.cmp"),
+  require("config.data.fidget"),
+  require("config.data.trouble"),
   require("config.data.autopairs"),
   require("config.data.tabby"),
   require("config.data.treesitter"),
   require("config.data.symbols_outline"),
   require("config.data.gitsigns"),
   require("config.data.mason"),
-  require("config.data.neo_tree"),
   require("config.data.hlchunk"),
   require("config.data.null_ls"),
   require("config.data.masonlsp"),
