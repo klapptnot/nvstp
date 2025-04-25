@@ -4,9 +4,9 @@ return {
   {
     meth = "textDocument/codeAction",
     mapp = "<C-.>",
-    mode = { "n", "i", "v" },
+    mode = { "n", "i" },
     exec = vim.lsp.buf.code_action,
-    desc = "[LSP][W] Get code actions",
+    desc = "[LSP][P] Get code actions",
     opts = __opts__,
   },
   {
@@ -14,7 +14,7 @@ return {
     mapp = "gD",
     mode = { "n" },
     exec = vim.lsp.buf.declaration,
-    desc = "[LSP][W] Jump to declaration",
+    desc = "[LSP] Goto to declaration",
     opts = __opts__,
   },
   {
@@ -22,7 +22,7 @@ return {
     mapp = "gd",
     mode = { "n" },
     exec = vim.lsp.buf.definition,
-    desc = "[LSP][W] Jump to definition",
+    desc = "[LSP] Goto to definition",
     opts = __opts__,
   },
   {
@@ -30,7 +30,7 @@ return {
     mapp = "gi",
     mode = { "n" },
     exec = vim.lsp.buf.implementation,
-    desc = "[LSP][W] Jump to implementation",
+    desc = "[LSP] Goto to implementation",
     opts = __opts__,
   },
   {
@@ -38,7 +38,7 @@ return {
     mapp = "gy",
     mode = { "n" },
     exec = vim.lsp.buf.type_definition,
-    desc = "[LSP][W] Jump to type definition",
+    desc = "[LSP] Goto to type definition",
     opts = __opts__,
   },
   {

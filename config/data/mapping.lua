@@ -9,14 +9,6 @@ local _opts_any = { silent = true }
 return {
   -- ^ Lua functions
   {
-    mapp = "<leader>",
-    mode = { "n" },
-    exec = api.whichkey,
-    desc = "Save current file",
-    opts = { nowait = true, silent = true, noremap = true },
-  },
-
-  {
     mapp = "<C-s>",
     mode = { "n", "v", "i" },
     exec = api.save,

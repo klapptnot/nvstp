@@ -44,6 +44,7 @@ function main.create_win(layout)
         width = math.ceil(fsty.w * vim.o.columns),
         border = fsty.s,
       })
+      vim.wo.winhighlight = "FloatBorder:Type"
     end,
   })[layout]() -- Create window
   if main.opts.no_line_nums == true then

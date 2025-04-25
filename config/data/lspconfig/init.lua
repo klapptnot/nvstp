@@ -38,7 +38,7 @@ return {
     local lspconfig = require("lspconfig")
     lspconfig.rust_analyzer.setup(basic_opts)
     lspconfig.clangd.setup(basic_opts)
-    lspconfig.pylyzer.setup(basic_opts)
+    lspconfig.pyright.setup(basic_opts)
     lspconfig.ts_ls.setup(basic_opts)
     lspconfig.bashls.setup(basic_opts)
     lspconfig.html.setup(basic_opts)

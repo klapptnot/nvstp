@@ -2,8 +2,6 @@ local main = {}
 local str = require("src.warm.str")
 local match = require("src.warm.spr").match
 
-main.whichkey = require("src.nvstp.palette").whichkey
-
 ---Returns whether the current mode is visual mode or not
 ---@return boolean
 function main.is_visual_mode()

@@ -45,6 +45,7 @@ if not vim.uv.fs_stat(NVSTP.cache_path) then vim.fn.mkdir(NVSTP.cache_path, "p")
 -- Space is <leader> key
 vim.g.mapleader = " "
 
+
 ---@type NvstpConfig
 local config = require("config")
 
@@ -57,6 +58,7 @@ config
 
 vim.cmd.colorscheme("catppuccin")
 
+require("src.nvstp.palette.builtin.whichkey").setup().map("<leader>")
 require("src.nvstp.tweaks").apply()
 require("src.nvstp.term").setup()
 require("src.nvstp.statusline").set({

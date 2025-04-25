@@ -52,6 +52,26 @@ function main.pesc(p)
   return s
 end
 
+---Performs a fuzzy match on the given string.
+---@param str string The string to search in
+---@param pattern string The pattern to match against
+---@return boolean matched
+---@return integer[] positions Matched characters
+function main.fuzzy(str, pattern)
+  pattern = pattern:lower()
+  str = str:lower()
+  local pos = {}
+  ---@type integer?
+  local j = 1
+  for i = 1, #pattern do
+    j = str:find(pattern:sub(i, i), j, true)
+    if j == nil then return false, pos end
+    pos[#pos + 1] = j
+    j = j + 1
+  end
+  return true, pos
+end
+
 ---Return str if is not nil or zero length, otherwise returns fallback
 ---@param s any
 ---@param fallback string
@@ -168,48 +188,41 @@ function main.format(s, ...)
   local args = { ... }
   local i = 1
 
-  local patt, erns, targ = nil, nil, false
-  -- If argument is a table, use the table as index
-  if args[1] ~= nil and type(args[1]) == "table" then
-    args = args[1]
-    targ = true
-    patt, erns = "{<([%D][%a_]*)>}", "^([%D][%a_]*)"
-  else
-    patt, erns = "{(%d*)}", "^(%d*)"
+  local function index_in()
+    local idx = i
+    i = i + 1
+    return args[idx]
   end
 
-  local function replacement(m)
-    if m == "" then
+  local function replacement(match)
+    if match == "" then
       i = i + 1
       return tostring(args[i - 1]) or ""
     end
     -- stylua: ignore start
-    local w = tonumber(m:match("(%d+)$")) or 0   -- Width
-    local d = m:match("([<^>]?)%d+$") or "<"     -- Pad opr
-    local S = m:match(":.?(=)[<^>]?%d+$") ~= nil -- Cut longer
-    local c = m:match(":(.)=?[<^>]%d+$") or " "  -- Fill char
-    local n = m:match(erns)                      -- String id
-    if not targ then
-      n = tonumber(n)
-    end
+    local width = tonumber(match:match("(%d+)$")) or 0 -- Width
+    local pad = match:match("([<^>]?)%d+$") or "<"     -- Pad opr
+    local cut = match:match(":.?(=)[<^>]?%d+$") ~= nil -- Cut longer
+    local char = match:match(":(.)=?[<^>]%d+$") or " " -- Fill char
+    local id = tonumber(match:match("^(%d*)"))         -- String id
     -- stylua: ignore end
-    if n == nil then
-      n = i
+    if id == nil then
+      id = i
       i = i + 1
     end
-    m = tostring(args[n]) --:gsub("^ *(.-) *$", "%1")
+    match = tostring(args[id]) --:gsub("^ *(.-) *$", "%1")
     -- In case string is wider than desired, cut it
-    if S and #m > w then
-      m = m:sub(1, w - 1) .. ((#"…" > 1) and "." or "…")
+    if cut and #match > width then
+      match = match:sub(1, width - 1) .. "…"
     else
-      m = main.pad(m, w, c, d)
+      match = main.pad(match, width, char, pad)
     end
-    return m
+    return match
   end
 
   s = s:gsub("{{(.-)}}", "&!:%1::;")
+    :gsub("{}", index_in)
     :gsub("{(%d*:.?=?[=<^>]?%d*)}", replacement)
-    :gsub(patt, replacement)
     :gsub("&!:(.-)::;", "{%1}")
   return s
 end
