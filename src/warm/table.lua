@@ -251,20 +251,26 @@ end
 --   -- Do stuff with k, v
 -- end)
 -- ```
+---@generic T
 ---@param tbl table Table to map
----@param fun fun(k, v, map:function, me:function) Callback to run for each item
----@param track boolean Keep track of key names
----@return table<integer, {key:string|integer, ret:any}>
+---@param fun fun(k, v, map:function, me:function):T Callback to run for each item
+---@param track? boolean Keep track of key names
+---@return table<integer, {key:string|integer, ret:T[]}>
 function main.map(tbl, fun, track)
   if track == nil then track = false end
   spr.validate({ "table", "function", "boolean" }, { tbl, fun, track })
   local rvl = {}
-  for k, v in pairs(tbl) do
-    rvl[#rvl + 1] = fun(k, v, main.map, fun)
-    if track then rvl[#rvl] = {
-      key = k,
-      ret = rvl[#rvl],
-    } end
+  if track then
+    for k, v in pairs(tbl) do
+      rvl[#rvl + 1] = {
+        key = k,
+        ret = fun(k, v, main.map, fun),
+      }
+    end
+  else
+    for k, v in pairs(tbl) do
+      rvl[#rvl + 1] = fun(k, v, main.map, fun)
+    end
   end
   return rvl
 end

@@ -136,23 +136,6 @@ local function get_mapps()
   return res
 end
 
-local function update_selection(key_repr, buf, cur, max, ns)
-  max = max - 1
-  local new_sel = nil
-  if key_repr == "<Up>" then
-    new_sel = math.max(math.min(cur - 1, max), 0)
-    if cur == new_sel then new_sel = max end -- min -> wrap
-  elseif key_repr == "<Down>" then
-    new_sel = math.min(math.max(cur + 1, 0), max)
-    if cur == new_sel then new_sel = 0 end -- max -> wrap
-  else
-    return nil
-  end
-  vim.api.nvim_buf_clear_namespace(buf, ns, 0, -1)
-  vim.api.nvim_buf_add_highlight(buf, ns, "NWhichKeyMatch", new_sel, 0, -1)
-  return new_sel
-end
-
 local function whichkey()
   local mapps = get_mapps()
   if tbl.is_empty(mapps) then return end
@@ -197,6 +180,9 @@ local function whichkey()
       if not run then return false, nil end
       if #keys == 0 then return nil, nil end
       selected = selected + 1 -- 1 based
+      if selected == 0 or mapps[keys[selected]] == nil then -- nothing selected, or nil
+        selected = 1
+      end
       return true, mapps[keys[selected]]
     else
       if #lines > 0 then
@@ -286,6 +272,7 @@ local function whichkey()
           set_window_style("NWhichKeyPrefix")
           fuzzy = false
         else
+          require("notify")("Clear line", vim.log.levels.INFO, {})
           vim.api.nvim_buf_set_lines(props.input.buf, 0, -1, false, {})
         end
         handle_updates(false)
@@ -299,13 +286,28 @@ local function whichkey()
         close_whichkey()
         return ""
       end
-      ---@diagnostic disable-next-line: cast-local-type
-      selected =
-        update_selection(key_repr, props.display.buf, selected, props.display.cur_h, fuzzs_ns)
-      if selected ~= nil then return "" end
-      selected = -1
-      vim.schedule(handle_updates)
-      return
+      local max = props.display.cur_h - 1
+      local new_sel = nil
+      if key_repr == "<Up>" then
+        new_sel = math.max(math.min(selected - 1, max), 0)
+        if selected == new_sel then new_sel = max end -- min -> wrap
+      elseif key_repr == "<Down>" then
+        new_sel = math.min(math.max(selected + 1, 0), max)
+        if selected == new_sel then new_sel = 0 end -- max -> wrap
+      else
+        vim.schedule(handle_updates) -- update after return
+        return
+      end
+      selected = new_sel
+      vim.api.nvim_buf_clear_namespace(props.display.buf, fuzzs_ns, 0, -1)
+      vim.hl.range(
+        props.display.buf,
+        fuzzs_ns,
+        "NWhichKeyMatch",
+        { selected, 0 },
+        { selected, -1 }
+      )
+      return ""
     end
 
     local functional_keys = {
