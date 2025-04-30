@@ -1,4 +1,4 @@
-local dev_icons_loaded, devicons = pcall(require, "nvim-web-devicons")
+local dev_icons_loaded, devicons = pcall (require, "nvim-web-devicons")
 
 local vim_modes = {
   ["n"] = { "NORMAL", "normal" },
@@ -51,139 +51,139 @@ local vim_modes = {
 local main = {}
 local blocks = {}
 
-function blocks.mode(bar, v)
-  local mode, color = table.unpack(vim_modes[v.mode] or { "UNK", "other" })
-  bar(main.colors.mode[color], " " .. mode)
+function blocks.mode (bar, v)
+  local mode, color = table.unpack (vim_modes[v.mode] or { "UNK", "other" })
+  bar (main.colors.mode[color], " " .. mode)
 end
 
-function blocks.file(bar, v)
+function blocks.file (bar, v)
   local icon = "󰈚 "
-  local file = (#v.name > 0 and vim.fs.basename(v.name)) or "<new>"
+  local file = (#v.name > 0 and vim.fs.basename (v.name)) or "<new>"
 
   if file ~= "<new>" then
-    if dev_icons_loaded then icon = devicons.get_icon(file) or icon end
+    if dev_icons_loaded then icon = devicons.get_icon (file) or icon end
   end
 
-  bar(
+  bar (
     main.colors.file.name,
     "%{getbufvar(bufnr('%'),'&readonly') ? ' ' : ''}"
-      .. icon
-      .. " "
-      .. file
-      .. " (buf: %n)%{getbufvar(bufnr('%'),'&mod')?' ':''}"
+    .. icon
+    .. " "
+    .. file
+    .. " (buf: %n)%{getbufvar(bufnr('%'),'&mod')?' ':''}"
   )
 end
 
-function blocks.file_type(bar, v) bar(main.colors.file.type, v.bfft) end
+function blocks.file_type (bar, v) bar (main.colors.file.type, v.bfft) end
 
-function blocks.file_eol(bar, v)
-  bar(main.colors.file.eol, (vim.bo[v.sbuf].fileformat == "unix") and "LF" or "CRLF")
+function blocks.file_eol (bar, v)
+  bar (main.colors.file.eol, (vim.bo[v.sbuf].fileformat == "unix") and "LF" or "CRLF")
 end
 
-function blocks.file_encoding(bar, v)
+function blocks.file_encoding (bar, v)
   local enc = vim.bo[v.sbuf].fileencoding
-  if enc ~= "" then bar(main.colors.file.enc, enc) end
+  if enc ~= "" then bar (main.colors.file.enc, enc) end
 end
 
-function blocks.cursor_pos(bar, _) bar(main.colors.cursor_pos, "(%p%%) %c:%l/%L [%b][0x%B]") end
+function blocks.cursor_pos (bar, _) bar (main.colors.cursor_pos, "(%p%%) %c:%l/%L [%b][0x%B]") end
 
-function blocks.lsp_name(bar, v)
+function blocks.lsp_name (bar, v)
   if v.ilsp then
     local sbuf = v.sbuf
-    for _, lsp in ipairs(vim.lsp.get_clients({ bufnr = sbuf })) do
+    for _, lsp in ipairs (vim.lsp.get_clients ({ bufnr = sbuf })) do
       if lsp.name ~= "null-ls" and lsp.attached_buffers[sbuf] ~= nil then
-        bar(main.colors.lsp.name, "  " .. lsp.name)
+        bar (main.colors.lsp.name, "  " .. lsp.name)
         break
       end
     end
   end
 end
 
-function blocks.lsp_diag(bar, v)
+function blocks.lsp_diag (bar, v)
   if v.ilsp then
     local sbuf = v.sbuf
     local i, h, w, e
-    i = #vim.diagnostic.get(sbuf, { severity = vim.diagnostic.severity.INFO })
-    h = #vim.diagnostic.get(sbuf, { severity = vim.diagnostic.severity.HINT })
-    w = #vim.diagnostic.get(sbuf, { severity = vim.diagnostic.severity.WARN })
-    e = #vim.diagnostic.get(sbuf, { severity = vim.diagnostic.severity.ERROR })
+    i = #vim.diagnostic.get (sbuf, { severity = vim.diagnostic.severity.INFO })
+    h = #vim.diagnostic.get (sbuf, { severity = vim.diagnostic.severity.HINT })
+    w = #vim.diagnostic.get (sbuf, { severity = vim.diagnostic.severity.WARN })
+    e = #vim.diagnostic.get (sbuf, { severity = vim.diagnostic.severity.ERROR })
     --         |
-    if i and i > 0 then bar(main.colors.lsp.info, " " .. tostring(i)) end
-    if h and h > 0 then bar(main.colors.lsp.hint, " " .. tostring(h)) end
-    if w and w > 0 then bar(main.colors.lsp.warn, " " .. tostring(w)) end
-    if e and e > 0 then bar(main.colors.lsp.error, " " .. tostring(e)) end
+    if i and i > 0 then bar (main.colors.lsp.info, " " .. tostring (i)) end
+    if h and h > 0 then bar (main.colors.lsp.hint, " " .. tostring (h)) end
+    if w and w > 0 then bar (main.colors.lsp.warn, " " .. tostring (w)) end
+    if e and e > 0 then bar (main.colors.lsp.error, " " .. tostring (e)) end
   end
 end
 
-function blocks.git_branch(bar, v)
-  if v.igit ~= nil then bar(main.colors.git.branch, " " .. v.igit) end
+function blocks.git_branch (bar, v)
+  if v.igit ~= nil then bar (main.colors.git.branch, " " .. v.igit) end
 end
 
-function blocks.git_stat(bar, v)
+function blocks.git_stat (bar, v)
   if v.igit then
     local gst = vim.b[v.sbuf].gitsigns_status_dict
     if gst == nil then return end
     if gst.added and gst.added > 0 then
-      bar(main.colors.git.added, " " .. tostring(gst.added))
+      bar (main.colors.git.added, " " .. tostring (gst.added))
     end
     if gst.changed and gst.changed > 0 then
-      bar(main.colors.git.changed, " " .. tostring(gst.changed))
+      bar (main.colors.git.changed, " " .. tostring (gst.changed))
     end
     if gst.removed and gst.removed > 0 then
-      bar(main.colors.git.removed, " " .. tostring(gst.removed))
+      bar (main.colors.git.removed, " " .. tostring (gst.removed))
     end
   end
 end
 
-function blocks.cwd(bar, _) bar(main.colors.cwd, "󰉖 " .. vim.fs.basename(vim.fn.getcwd())) end
+function blocks.cwd (bar, _) bar (main.colors.cwd, "󰉖 " .. vim.fs.basename (vim.fn.getcwd ())) end
 
-function blocks.truncate(bar, v)
+function blocks.truncate (bar, v)
   v.skip = true
-  bar(nil, "%#StatusLine#%<")
+  bar (nil, "%#StatusLine#%<")
 end
 
-function blocks.shift_to_end(bar, _) bar(nil, "%#StatusLine#%=") end
+function blocks.shift_to_end (bar, _) bar (nil, "%#StatusLine#%=") end
 
-function main.run()
+function main.run ()
   if #main.bar < 1 then return "" end
   local env = {}
 
-  env.sbuf = vim.api.nvim_win_get_buf(vim.g.statusline_winid)
+  env.sbuf = vim.api.nvim_win_get_buf (vim.g.statusline_winid)
   env.bfft = vim.bo[env.sbuf].filetype
-  env.mode = vim.api.nvim_get_mode().mode
-  if string.has(main.ignore, env.bfft) then
+  env.mode = vim.api.nvim_get_mode ().mode
+  if string.has (main.ignore, env.bfft) then
     return vim_modes[env.mode][1] .. " in " .. env.bfft .. "%<%=%c:%l/%L [%b][0x%B]"
-  elseif vim.api.nvim_get_current_win() ~= vim.g.statusline_winid then
+  elseif vim.api.nvim_get_current_win () ~= vim.g.statusline_winid then
     return "  INACTIVE"
       .. (#env.bfft > 0 and (" in " .. env.bfft) or "")
       .. "%<%=%c:%l/%L [%b][0x%B]"
   end
 
-  env.name = vim.fn.bufname(env.sbuf)
+  env.name = vim.fn.bufname (env.sbuf)
   env.igit = vim.b[env.sbuf].gitsigns_head
-  env.ilsp = rawget(vim, "lsp") ~= nil
+  env.ilsp = rawget (vim, "lsp") ~= nil
   env.swap = false
   env.skip = false
   local sep = main.separators
 
-  local function color_and_unions(last, curr, id)
+  local function color_and_unions (last, curr, id)
     local hg_name = "NvstpSL" .. id
 
     if curr == nil then
       if last == nil then return "" end
-      vim.api.nvim_set_hl(0, hg_name, { fg = last.bg })
+      vim.api.nvim_set_hl (0, hg_name, { fg = last.bg })
       return "%#" .. hg_name .. "#" .. sep.r
     end
 
-    vim.api.nvim_set_hl(0, hg_name, curr)
+    vim.api.nvim_set_hl (0, hg_name, curr)
     if last == nil then return "%#" .. hg_name .. "# " end
-    vim.api.nvim_set_hl(0, hg_name .. "S", { fg = last.bg, bg = curr.bg })
+    vim.api.nvim_set_hl (0, hg_name .. "S", { fg = last.bg, bg = curr.bg })
     return "%#" .. hg_name .. "S#" .. sep.r .. "%#" .. hg_name .. "# "
   end
 
-  ---@type string|table
+  --- @type string|table
   local bar = {}
-  local function bar_element(c, s)
+  local function bar_element (c, s)
     local i = #bar
     bar[i + 1] = c
     bar[i + 2] = s
@@ -191,9 +191,9 @@ function main.run()
 
   local line = ""
   local last_hg = nil
-  for h, fun in ipairs(main.bar) do
+  for h, fun in ipairs (main.bar) do
     if blocks[fun] == nil then goto continue end
-    blocks[fun](bar_element, env)
+    blocks[fun] (bar_element, env)
     for i = 1, #bar, 1 do
       local it = bar[i]
       if i % 2 == 0 then
@@ -203,7 +203,11 @@ function main.run()
           env.skip = false
         else
           line = line
-            .. color_and_unions(last_hg, it, fun:gsub("^(.)", string.upper) .. tostring(h + i))
+            .. color_and_unions (
+              last_hg,
+              it,
+              fun:gsub ("^(.)", string.upper) .. tostring (h + i)
+            )
           last_hg = it
         end
       end
@@ -214,13 +218,13 @@ function main.run()
   return line .. " "
 end
 
-function main.set(opts, enable)
-  main = vim.tbl_deep_extend("force", main, opts)
-  vim.api.nvim_set_hl(0, "StatusLineNC", main.colors.inactive)
+function main.set (opts, enable)
+  main = vim.tbl_deep_extend ("force", main, opts)
+  vim.api.nvim_set_hl (0, "StatusLineNC", main.colors.inactive)
   StatusLineGenerate = main.run
 
   main.__enabled = not enable
-  vim.api.nvim_create_user_command("NvstpSLToggle", function()
+  vim.api.nvim_create_user_command ("NvstpSLToggle", function ()
     if main.__enabled then
       vim.opt.statusline = ""
       main.__enabled = false
@@ -229,7 +233,7 @@ function main.set(opts, enable)
       main.__enabled = true
     end
   end, {})
-  vim.api.nvim_command("NvstpSLToggle")
+  vim.api.nvim_command ("NvstpSLToggle")
 end
 
 return main

@@ -1,11 +1,11 @@
-local api = require("nvstp.api")
+local api = require ("nvstp.api")
 
----@type vim.api.keyset.keymap
+--- @type vim.api.keyset.keymap
 local _opts_lua = { expr = false, noremap = false }
----@type vim.api.keyset.keymap
+--- @type vim.api.keyset.keymap
 local _opts_map = { expr = false, silent = true }
 
----@type NvstpKeyMap[]
+--- @type NvstpKeyMap[]
 return {
   -- ^ Lua functions
   {
@@ -115,7 +115,7 @@ return {
   {
     mapp = "<C-Up>",
     mode = { "n" },
-    exec = function() api.scroll_markdown_float(-4) end,
+    exec = function () api.scroll_markdown_float (-4) end,
     desc = "Scroll up (?Hover/Main)",
     opts = _opts_lua,
   },
@@ -123,7 +123,7 @@ return {
   {
     mapp = "<C-Down>",
     mode = { "n" },
-    exec = function() api.scroll_markdown_float(4) end,
+    exec = function () api.scroll_markdown_float (4) end,
     desc = "Scroll down (?Hover/Main)",
     opts = _opts_lua,
   },
@@ -403,7 +403,7 @@ return {
   {
     mapp = "<C-BS>",
     mode = { "i" },
-    exec = '<C-W>',
+    exec = "<C-W>",
     desc = "Delete word backwards",
     opts = _opts_map,
   },

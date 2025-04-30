@@ -4,27 +4,27 @@ local builtins = {
   -- git = "src.nvstp.palette.builtin.git",
 }
 
----@type table<string, fun(...)>
+--- @type table<string, fun(...)>
 local PaletteLoader = {}
 
-setmetatable(PaletteLoader, {
-  __index = function(self, key)
+setmetatable (PaletteLoader, {
+  __index = function (self, key)
     local modname = builtins[key]
     if not modname then
-      vim.notify(
+      vim.notify (
         "Palette picker '" .. key .. "' not registered in builtins",
         vim.log.levels.WARN
       )
-      return function() end
+      return function () end
     end
 
-    local ok, mod = pcall(require, modname)
+    local ok, mod = pcall (require, modname)
     if not ok then
-      vim.notify(
+      vim.notify (
         "Failed to load picker '" .. key .. "' from '" .. modname .. "': " .. mod,
         vim.log.levels.ERROR
       )
-      return function() end
+      return function () end
     end
 
     self[key] = mod

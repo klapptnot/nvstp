@@ -10,13 +10,13 @@
 -- bring you balance and clarity while coding.
 
 local current_theme = vim.g.colors_name or "default"
-vim.defer_fn(function()
-  if vim.opt.termguicolors:get() == false then
-    vim.api.nvim_cmd({ cmd = "colorscheme", args = { current_theme } }, {
+vim.defer_fn (function ()
+  if vim.opt.termguicolors:get () == false then
+    vim.api.nvim_cmd ({ cmd = "colorscheme", args = { current_theme } }, {
       output = false,
     })
-    vim.api.nvim_cmd({ cmd = "redraw" }, {})
-    vim.notify(
+    vim.api.nvim_cmd ({ cmd = "redraw" }, {})
+    vim.notify (
       "Kalika theme requires `termguicolors` to be `true`. Falling back to the previous theme.",
       vim.log.levels.ERROR,
       { title = "Kalika Theme" }
@@ -25,7 +25,7 @@ vim.defer_fn(function()
 end, 0)
 -- just delay till opt is defined
 
----@type string
+--- @type string
 local palette = {
   -- Backgrounds
   -- background = "#0e0a16",
@@ -85,7 +85,7 @@ local palette = {
   ok = "#90ee90",
 }
 
----@type table<string, vim.api.keyset.highlight>
+--- @type table<string, vim.api.keyset.highlight>
 local highlights = {
   -- Base
   Normal = { fg = palette.foreground, bg = palette.background },
@@ -300,12 +300,12 @@ local highlights = {
   FloatFooter = { link = "Title" },
 }
 
-vim.api.nvim_cmd({ cmd = "highlight", args = { "clear" } }, { output = false })
+vim.api.nvim_cmd ({ cmd = "highlight", args = { "clear" } }, { output = false })
 
-for group, opts in pairs(highlights) do
+for group, opts in pairs (highlights) do
   opts.force = true
   opts.cterm = opts.cterm or {}
-  vim.api.nvim_set_hl(0, group, opts)
+  vim.api.nvim_set_hl (0, group, opts)
 end
 
 vim.g.colors_name = "kalika"

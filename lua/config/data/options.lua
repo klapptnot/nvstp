@@ -17,7 +17,7 @@ return {
   completeopt = "menuone,noselect,preview",
   mouse = "a",
   list = true,
-  listchars = { tab = '» ', trail = '•', nbsp = '␣' },
+  listchars = { tab = "» ", trail = "•", nbsp = "␣" },
   showmatch = false,
   spell = true,
   ruler = false,
