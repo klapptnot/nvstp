@@ -408,9 +408,17 @@ function main.setup (opts)
   main.opts.prefill = main.opts.prefill and vim.fn.keytrans (main.opts.prefill) or ""
   main.opts.title = str.format (" {} ", main.opts.title)
 
-  for name, color in pairs (main.opts.hl or {}) do
-    vim.api.nvim_set_hl (0, "NWhichKey" .. name, color)
+  local function set_hl_groups (_)
+    for name, color in pairs (main.opts.hl or {}) do
+      vim.api.nvim_set_hl (0, "NWhichKey" .. name, color)
+    end
   end
+
+  set_hl_groups ()
+
+  vim.api.nvim_create_autocmd ("ColorScheme", {
+    callback = set_hl_groups,
+  })
 
   return main
 end
