@@ -36,6 +36,7 @@ end
 --- @param name string The name of the toggle to switch
 function main.toggle (name)
   local exists, idx = tbl.contains (main.toggles.names, name)
+  local dname = name:gsub("-", " "):gsub("^.", string.upper)
   if not exists then
     vim.notify ("Toggle '" .. name .. "' not found", vim.log.levels.WARN, { title = "Toggle" })
     return
@@ -48,14 +49,14 @@ function main.toggle (name)
   local success, err = pcall (main.toggles.callbacks[idx], main.toggles.states[idx])
   if not success then
     vim.notify (
-      "Error in toggle callback for '" .. name .. "': " .. tostring (err),
+      "Error in toggle callback for " .. dname .. ": " .. tostring (err),
       vim.log.levels.ERROR,
       { title = "Toggle" }
     )
   else
     local state_str = main.toggles.states[idx] and "enabled" or "disabled"
     vim.notify (
-      "Toggle '" .. name .. "' " .. state_str,
+      "Toggle " .. dname .. " " .. state_str,
       vim.log.levels.INFO,
       { title = "Toggle" }
     )

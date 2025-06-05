@@ -59,7 +59,7 @@ require ("nvstp.hotrel").setup ()
 require ("nvstp.term").setup ()
 require ("nvstp.palette.whichkey").setup ().map ("<leader>")
 require ("nvstp.statusline").set ({
-  ignore = "neo-tree,Outline,toggleterm",
+  ignore = "Outline,toggleterm",
   bar = {
     "mode",
     "file",

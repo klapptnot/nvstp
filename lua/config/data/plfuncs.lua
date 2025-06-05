@@ -29,6 +29,7 @@ function main.lspconfig ()
   }
 
   lspconfig.rust_analyzer.setup (shared_opts)
+  lspconfig.zls.setup (shared_opts)
   lspconfig.clangd.setup (shared_opts)
   lspconfig.pyright.setup (shared_opts)
   lspconfig.ts_ls.setup (shared_opts)
@@ -100,17 +101,17 @@ function main.tabby ()
         }
       end),
       line.spacer (),
-      line.wins_in_tab (line.api.get_current_tab ()).foreach (function (win)
-        local hl = win.is_current () and theme.cur_win or theme.win
-        return {
-          line.sep (" ", hl, theme.fill),
-          win.is_current () and "" or "",
-          win.buf_name (),
-          line.sep ("", hl, theme.fill),
-          hl = hl,
-          margin = " ",
-        }
-      end),
+      -- line.wins_in_tab (line.api.get_current_tab ()).foreach (function (win)
+      --   local hl = win.is_current () and theme.cur_win or theme.win
+      --   return {
+      --     line.sep (" ", hl, theme.fill),
+      --     win.is_current () and "" or "",
+      --     win.buf_name (),
+      --     line.sep ("", hl, theme.fill),
+      --     hl = hl,
+      --     margin = " ",
+      --   }
+      -- end),
       {
         line.sep (" ", theme.tail, theme.fill),
         { "  ", hl = theme.tail },
@@ -331,18 +332,46 @@ function main.null_ls ()
   null_ls.setup ({
     sources = {
       -- Formatting
-      null_ls.builtins.formatting.black.with ({ extra_args = { "--fast" } }),
+      null_ls.builtins.formatting.black,
       null_ls.builtins.formatting.shfmt.with ({
-        extra_args = {
+        args = {
+          "-filename",
+          "$FILENAME",
           "-i",
           "2",
           "-ci",
-          "-kp",
           "-bn",
           "-sr",
+          "-",
         },
       }),
     },
+  })
+
+  vim.api.nvim_create_autocmd ("LspAttach", {
+    desc = "LSP actions",
+    callback = function (ev)
+      local client = vim.lsp.get_client_by_id (ev.data.client_id)
+      local bufnr = ev.buf
+
+      if not client or client.name ~= "null-ls" then
+        return
+      end
+
+      -- If we reach here, the client is null-ls, so proceed with the keymapping
+      vim.defer_fn (function ()
+        for _, mode in ipairs ({ "n", "v" }) do
+          pcall(vim.api.nvim_buf_del_keymap, bufnr, mode, "<leader>lf")
+          vim.api.nvim_buf_set_keymap (bufnr, mode, "<leader>lf", "", {
+            desc = "[NLS] Format document or selection",
+            callback = function ()
+              vim.lsp.buf.format ({ async = true, name = "null-ls" })
+            end,
+            silent = true,
+          })
+        end
+      end, 500)
+    end,
   })
 end
 
