@@ -236,8 +236,8 @@ return {
       chunk = {
         use_treesitter = true,
         style = {
-          "#b0bfff",
           "#f0bfff",
+          "#f38ba8",
         },
         chars = {
           horizontal_line = "─",
@@ -302,14 +302,6 @@ return {
     config = funcs.lspconfig,
   },
 
-  {
-    "LhKipp/nvim-nu",
-    ft = "nu",
-    opts = {
-      use_lsp_features = true,
-      all_cmd_names = [[help commands | get name | str join "\n"]],
-    },
-  },
   {
     "NvChad/nvim-colorizer.lua",
     init = function () require ("colorizer").setup () end,

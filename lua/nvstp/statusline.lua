@@ -142,7 +142,10 @@ function blocks.truncate (bar, v)
   bar (nil, "%#StatusLine#%<")
 end
 
-function blocks.shift_to_end (bar, _) bar (nil, "%#StatusLine#%=") end
+function blocks.shift_to_end (bar, v)
+  v.swap = true
+  bar (nil, "%#StatusLine#%=")
+end
 
 function main.run ()
   if #main.bar < 1 then return "" end
@@ -164,22 +167,39 @@ function main.run ()
   env.ilsp = rawget (vim, "lsp") ~= nil
   env.swap = false
   env.skip = false
-  local sep = main.separators
+  local sep = main.separators.r
 
-  local function color_and_unions (last, curr, id)
+  local function color_and_unions_r (last, curr, id)
     local hg_name = "NvstpSL" .. id
 
     if curr == nil then
       if last == nil then return "" end
       vim.api.nvim_set_hl (0, hg_name, { fg = last.bg })
-      return "%#" .. hg_name .. "#" .. sep.r
+      return "%#" .. hg_name .. "#" .. sep
     end
 
     vim.api.nvim_set_hl (0, hg_name, curr)
     if last == nil then return "%#" .. hg_name .. "# " end
     vim.api.nvim_set_hl (0, hg_name .. "S", { fg = last.bg, bg = curr.bg })
-    return "%#" .. hg_name .. "S#" .. sep.r .. "%#" .. hg_name .. "# "
+    return "%#" .. hg_name .. "S#" .. sep .. "%#" .. hg_name .. "# "
   end
+
+  local function color_and_unions_l (last, curr, id)
+    local hg_name = "NvstpSL" .. id
+
+    if curr == nil then
+      if last == nil then return "" end
+      vim.api.nvim_set_hl (0, hg_name, { bg = last.bg })
+      return "%#" .. hg_name .. "#" .. sep
+    end
+
+    vim.api.nvim_set_hl (0, hg_name, curr)
+    if last == nil then return " %#" .. hg_name .. "#" end
+    vim.api.nvim_set_hl (0, hg_name .. "S", { bg = last.bg, fg = curr.bg })
+    return " %#" .. hg_name .. "S#" .. sep .. "%#" .. hg_name .. "#"
+  end
+
+  local color_and_unions = color_and_unions_r
 
   --- @type string|table
   local bar = {}
@@ -209,6 +229,12 @@ function main.run ()
               fun:gsub ("^(.)", string.upper) .. tostring (h + i)
             )
           last_hg = it
+        end
+        if env.swap then
+          last_hg = {}
+          sep = main.separators.l
+          color_and_unions = color_and_unions_l
+          env.swap = false
         end
       end
     end

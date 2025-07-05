@@ -13,8 +13,8 @@ local function get_document_symbols (opts)
     local function extract_symbols (items)
       for _, item in ipairs (items) do
         -- Check if it's DocumentSymbol or SymbolInformation
-        if item.kind == 12 then -- DocumentSymbol
-          if item.range then -- DocumentSymbol
+        if item.kind == 12 or item.kind == 6 or item.kind == 8 then -- function / method / field
+          if item.range then
             local range = item.range
             local line = range.start.line
             local col = range.start.character

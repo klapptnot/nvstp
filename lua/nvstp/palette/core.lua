@@ -132,7 +132,7 @@ function main.open (opts)
   local function close_palette ()
     vim.api.nvim_win_close (props.input.win, true)
     vim.api.nvim_win_close (props.display.win, true)
-    vim.api.nvim_command ("stopinsert")
+    vim.schedule (function () vim.api.nvim_command ("stopinsert") end)
   end
 
   return close_palette, props

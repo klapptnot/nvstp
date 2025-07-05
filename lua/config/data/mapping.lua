@@ -1,5 +1,34 @@
 local api = require ("nvstp.api")
 
+local function toggle_or_refs (toggle_fun, lay)
+  return function ()
+    local buf = vim.api.nvim_get_current_buf ()
+    local buftype = vim.api.nvim_get_option_value ("buftype", { buf = buf })
+
+    if buftype ~= "terminal" then
+      toggle_fun ()
+      return
+    end
+
+    -- Get the current terminal instance info
+    local term_api = require ("nvstp.term")
+    local current_instance = nil
+    for _, instance in pairs (term_api.instances) do
+      if instance.buf == buf then
+        current_instance = instance
+        break
+      end
+    end
+
+    if current_instance and current_instance.lay == lay then
+      toggle_fun ()
+      return
+    end
+
+    api.find_and_open_refs ()
+  end
+end
+
 --- @type vim.api.keyset.keymap
 local _opts_lua = { expr = false, noremap = false }
 --- @type vim.api.keyset.keymap
@@ -81,7 +110,7 @@ return {
   },
 
   {
-    mapp = "<leader>wr",
+    mapp = "<leader>wR",
     mode = { "n" },
     exec = api.resize_win_interact,
     desc = "Interactively resize current window",
@@ -171,7 +200,7 @@ return {
   {
     mapp = "<C-`>",
     mode = { "n", "v", "t" },
-    exec = api.toggle_fterm,
+    exec = toggle_or_refs (api.toggle_fterm, "floating"),
     desc = "Toggle floating terminal",
     opts = _opts_lua,
   },
@@ -179,7 +208,7 @@ return {
   {
     mapp = "<M-1>",
     mode = { "n", "v", "t" },
-    exec = api.toggle_hterm,
+    exec = toggle_or_refs (api.toggle_hterm, "horizontal"),
     desc = "Toggle horizontal terminal",
     opts = _opts_lua,
   },
@@ -187,7 +216,7 @@ return {
   {
     mapp = "<M-2>",
     mode = { "n", "v", "t" },
-    exec = api.toggle_vterm,
+    exec = toggle_or_refs (api.toggle_vterm, "vertical"),
     desc = "Toggle vertical terminal",
     opts = _opts_lua,
   },
@@ -391,6 +420,29 @@ return {
     desc = "Open man page for symbol under cursor",
     opts = _opts_map,
   },
+
+  {
+    mapp = "<leader>bn",
+    mode = { "n" },
+    exec = "<Cmd>bnext<CR>",
+    desc = "Buffer: go to next",
+    opts = _opts_map,
+  },
+  {
+    mapp = "<leader>bp",
+    mode = { "n" },
+    exec = "<Cmd>bprevious<CR>",
+    desc = "Buffer: go to previous",
+    opts = _opts_map,
+  },
+  {
+    mapp = "<leader>bd",
+    mode = { "n" },
+    exec = "<Cmd>bd<CR>",
+    desc = "Buffer: delete current",
+    opts = _opts_map,
+  },
+
   -- do not save replaced selection
   {
     mapp = "p",
@@ -436,5 +488,12 @@ return {
     exec = "(v:count == 0 ? 'gj' : 'j')",
     desc = "Move cursor down",
     opts = { silent = true, expr = true },
+  },
+  {
+    mapp = "<C-I>",
+    mode = { "v", "n" },
+    exec = "0ggvG",
+    desc = "Select all",
+    opts = { silent = true, expr = false },
   },
 }
